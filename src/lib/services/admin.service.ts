@@ -116,7 +116,7 @@ export class AdminService {
           slug: 'blue-lock',
           genres: 'Deportes, Shonen, Psicológico',
           status: 'publishing',
-          coverImageUrl: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=800&auto=format&fit=crop',
+          coverImageUrl: '/images/blue-lock-cover.jpg',
           chapterCount: 3,
           updatedAt: new Date(),
         },

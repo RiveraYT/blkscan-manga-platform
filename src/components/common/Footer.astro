@@ -4,14 +4,13 @@
       
       <!-- COLUMNA 1: INFO Y LOGO -->
       <div class="space-y-3 md:col-span-2">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-bl-primary to-bl-accent flex items-center justify-center shadow-neon-sm">
-            <svg class="w-4 h-4 text-black" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-            </svg>
-          </div>
-          <span class="font-extrabold text-lg text-white">BLK<span class="text-bl-primary">SCAN</span></span>
-        </div>
+        <a href="/" class="inline-block">
+          <img
+            src="/images/logo-blkscan.png"
+            alt="BLK SCAN"
+            class="h-8 w-auto object-contain drop-shadow-[0_0_10px_rgba(0,210,255,0.3)]"
+          />
+        </a>
         <p class="text-xs text-bl-muted max-w-md leading-relaxed">
           Plataforma de lectura y administración de mangas por capítulos. Desarrollada con Astro SSR, Neon PostgreSQL, Drizzle ORM y almacenamiento escalable.
         </p>

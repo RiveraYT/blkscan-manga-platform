@@ -67,8 +67,8 @@ async function runSeed() {
         author: 'Muneyuki Kaneshiro',
         artist: 'Yusuke Nomura',
         genres: 'Deportes, Shonen, Psicológico, Acción, Drama',
-        coverImageKey: 'mangas/blue-lock/cover.webp',
-        coverImageUrl: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=800&auto=format&fit=crop', // Imagen temática deportiva de alta calidad
+        coverImageKey: 'mangas/blue-lock/blue-lock-cover.jpg',
+        coverImageUrl: '/images/blue-lock-cover.jpg',
         status: 'publishing',
         featured: true,
         orderIndex: 1,
