@@ -34,7 +34,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const hasDb = !!process.env.DATABASE_URL;
+    const dbUrl = process.env.DATABASE_URL;
+    const hasDb = !!dbUrl && !dbUrl.includes('usuario:password') && !dbUrl.includes('ep-xyz');
 
     // Si la base de datos está conectada, ejecutamos las operaciones en Neon PostgreSQL
     if (hasDb) {

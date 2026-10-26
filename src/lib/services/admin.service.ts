@@ -6,7 +6,8 @@ import { storage } from '../storage';
 
 export class AdminService {
   private static hasDb(): boolean {
-    return !!process.env.DATABASE_URL;
+    const url = process.env.DATABASE_URL;
+    return !!url && !url.includes('usuario:password') && !url.includes('ep-xyz');
   }
 
   /**

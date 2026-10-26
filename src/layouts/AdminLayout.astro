@@ -16,7 +16,8 @@ if (!session || (session.role !== 'admin' && session.role !== 'editor')) {
 }
 
 const currentPath = Astro.url.pathname;
-const hasDb = !!process.env.DATABASE_URL;
+const dbUrl = process.env.DATABASE_URL;
+const hasDb = !!dbUrl && !dbUrl.includes('usuario:password') && !dbUrl.includes('ep-xyz');
 
 const navItems = [
   { name: 'Dashboard', href: '/admin', icon: 'dashboard' },

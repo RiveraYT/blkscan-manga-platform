@@ -9,10 +9,20 @@ dotenv.config();
 async function runSeed() {
   console.log('🌱 [BLK SCAN SEED] Iniciando inicialización de datos...');
 
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl || dbUrl.includes('usuario:password') || dbUrl.includes('ep-xyz')) {
+    console.error('\n❌ ERROR: DATABASE_URL contiene valores de ejemplo ficticios ("usuario:password" o "ep-xyz").');
+    console.error('👉 Para conectar con tu base de datos Neon:');
+    console.error('   1. Abre tu archivo .env');
+    console.error('   2. Reemplaza la línea DATABASE_URL con tu connection string real obtenido de https://console.neon.tech');
+    console.error('   3. Vuelve a ejecutar: npm run db:push && npx tsx src/db/seed.ts\n');
+    console.error('ℹ️ Si solo deseas probar la plataforma en local sin configurar Neon todavía, ejecuta directamente:');
+    console.error('   npm run dev\n');
+    process.exit(1);
+  }
+
   try {
     const db = getDb();
-
-    // 1. Crear el primer Administrador
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@blkscan.com';
     const adminName = process.env.ADMIN_NAME || 'Ego Jinpachi';
     const adminPass = process.env.ADMIN_PASSWORD || 'Egoist2026!';

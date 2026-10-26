@@ -14,7 +14,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       return redirect('/admin/login?error=invalid');
     }
 
-    const hasDb = !!process.env.DATABASE_URL;
+    const url = process.env.DATABASE_URL;
+    const hasDb = !!url && !url.includes('usuario:password') && !url.includes('ep-xyz');
 
     // Fallback de desarrollo si la base de datos no está conectada aún
     if (!hasDb) {
