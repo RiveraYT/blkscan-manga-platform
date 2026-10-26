@@ -1,0 +1,57 @@
+---
+import { formatDate } from '../../lib/utils';
+import type { Chapter, Manga } from '../../db/schema';
+
+interface Props {
+  chapter: Chapter;
+  manga: Manga;
+}
+
+const { chapter, manga } = Astro.props;
+---
+
+<div class="group relative flex items-center gap-3 p-3 rounded-xl bg-bl-card/70 hover:bg-bl-surface border border-bl-cardBorder/60 hover:border-bl-primary/40 transition-all duration-300 shadow-sm hover:shadow-neon-sm">
+  <!-- MINIATURA PORTADA -->
+  <a href={`/mangas/${manga.slug}`} class="shrink-0 relative w-14 h-20 rounded-lg overflow-hidden bg-bl-dark border border-bl-cardBorder/50">
+    <img
+      src={manga.coverImageUrl}
+      alt={manga.title}
+      class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+      loading="lazy"
+    />
+  </a>
+
+  <!-- METADATOS DEL CAPÍTULO -->
+  <div class="flex-1 min-w-0">
+    <a href={`/mangas/${manga.slug}`} class="block text-xs font-semibold text-bl-muted hover:text-bl-primary truncate transition-colors">
+      {manga.title}
+    </a>
+
+    <a href={`/leer/${manga.slug}/${chapter.chapterNumber}`} class="block mt-0.5 group-hover:text-bl-primary transition-colors">
+      <span class="font-bold text-sm text-white group-hover:text-bl-primary">
+        Capítulo {chapter.chapterNumber}
+      </span>
+      {chapter.title && (
+        <span class="text-xs text-gray-400 block truncate font-normal">
+          - {chapter.title}
+        </span>
+      )}
+    </a>
+
+    <div class="mt-1 flex items-center justify-between text-[11px] text-bl-subtle">
+      <span>{formatDate(chapter.publishedAt)}</span>
+      
+      <!-- BOTÓN LEER RÁPIDO -->
+      <a
+        href={`/leer/${manga.slug}/${chapter.chapterNumber}`}
+        class="inline-flex items-center gap-1 text-[11px] font-semibold text-bl-primary hover:text-cyan-300 transition-colors"
+        title="Leer ahora"
+      >
+        <span>Leer</span>
+        <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</div>

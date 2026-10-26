@@ -1,0 +1,34 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import ChapterUploader from '../../../components/admin/ChapterUploader';
+import { AdminService } from '../../../lib/services/admin.service';
+
+const mangas = await AdminService.getAllMangas();
+const defaultMangaId = Astro.url.searchParams.get('mangaId') || undefined;
+---
+
+<AdminLayout title="Subir Nuevo Capítulo | BLK SCAN">
+  <div class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-extrabold text-white font-heading">
+          Subir <span class="text-bl-primary">Nuevo Capítulo</span>
+        </h1>
+        <p class="text-xs text-bl-muted mt-0.5">
+          Carga imágenes de tu ordenador, reordénalas y publica el capítulo.
+        </p>
+      </div>
+
+      <a href="/admin/capitulos" class="text-xs text-bl-muted hover:text-white">
+        ← Volver a capítulos
+      </a>
+    </div>
+
+    <!-- REACT ISLAND CON ARRASTRAR/SOLTAR Y PREVISUALIZACIÓN -->
+    <ChapterUploader
+      client:load
+      mangas={mangas.map((m) => ({ id: m.id, title: m.title, slug: m.slug }))}
+      defaultMangaId={defaultMangaId}
+    />
+  </div>
+</AdminLayout>

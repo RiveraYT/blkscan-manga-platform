@@ -1,0 +1,101 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { AdminService } from '../../../lib/services/admin.service';
+
+const mangas = await AdminService.getAllMangas();
+---
+
+<AdminLayout title="Gestión de Mangas | BLK SCAN">
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-extrabold text-white font-heading">
+          Gestión de <span class="text-bl-primary">Mangas</span>
+        </h1>
+        <p class="text-xs text-bl-muted mt-1">Crea, edita y organiza los títulos de la plataforma.</p>
+      </div>
+
+      <a
+        href="/admin/mangas/nuevo"
+        class="px-4 py-2 rounded-xl text-xs font-bold bg-bl-primary text-black hover:bg-cyan-300 transition-colors shadow-neon-sm flex items-center gap-1.5"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>Nuevo Manga</span>
+      </a>
+    </div>
+
+    <!-- TABLA DE MANGAS -->
+    <div class="rounded-2xl bg-bl-card border border-bl-cardBorder overflow-hidden shadow-xl">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-bl-dark/80 text-bl-muted border-b border-bl-cardBorder uppercase text-[10px] tracking-wider font-semibold">
+            <tr>
+              <th class="px-5 py-3.5">Manga</th>
+              <th class="px-5 py-3.5">Géneros</th>
+              <th class="px-5 py-3.5">Capítulos</th>
+              <th class="px-5 py-3.5">Estado</th>
+              <th class="px-5 py-3.5 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-bl-cardBorder/50 text-gray-200">
+            {mangas.map((m) => (
+              <tr class="hover:bg-bl-surface/40 transition-colors">
+                <td class="px-5 py-3.5">
+                  <div class="flex items-center gap-3">
+                    <img
+                      src={m.coverImageUrl}
+                      alt={m.title}
+                      class="w-10 h-14 object-cover rounded-lg border border-bl-cardBorder bg-bl-dark shrink-0"
+                    />
+                    <div>
+                      <span class="font-bold text-white block">{m.title}</span>
+                      <span class="text-[10px] text-bl-muted font-mono">/{m.slug}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-5 py-3.5 max-w-xs truncate text-bl-muted">
+                  {m.genres}
+                </td>
+                <td class="px-5 py-3.5 font-semibold text-white">
+                  {m.chapterCount} caps.
+                </td>
+                <td class="px-5 py-3.5">
+                  <span class={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                    m.status === 'publishing'
+                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                  }`}>
+                    {m.status === 'publishing' ? 'Emisión' : m.status}
+                  </span>
+                </td>
+                <td class="px-5 py-3.5 text-right">
+                  <div class="flex items-center justify-end gap-2">
+                    <a
+                      href={`/mangas/${m.slug}`}
+                      target="_blank"
+                      class="p-1.5 rounded-lg bg-bl-surface hover:text-bl-primary text-gray-300"
+                      title="Ver sitio público"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </a>
+                    <a
+                      href={`/admin/capitulos?mangaId=${m.id}`}
+                      class="px-2.5 py-1 rounded-lg bg-bl-surface hover:bg-bl-primary hover:text-black text-bl-primary font-semibold transition-colors"
+                    >
+                      Capítulos
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</AdminLayout>

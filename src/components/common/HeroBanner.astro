@@ -1,0 +1,114 @@
+---
+import type { Manga } from '../../db/schema';
+
+interface Props {
+  manga: Manga;
+  firstChapterNumber?: string;
+  totalChapters: number;
+}
+
+const { manga, firstChapterNumber = '1', totalChapters } = Astro.props;
+
+const genresList = manga.genres.split(',').map((g) => g.trim());
+---
+
+<section class="relative w-full overflow-hidden bg-gradient-to-b from-blue-950/40 via-bl-dark to-bl-dark border-b border-bl-cardBorder/40 py-12 md:py-20">
+  <!-- Efecto de resplandor deportivo / egoist azul -->
+  <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-r from-bl-primary/20 via-bl-accent/25 to-cyan-500/10 blur-[130px] rounded-full pointer-events-none"></div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <div class="flex flex-col md:flex-row items-center gap-8 lg:gap-14">
+      
+      <!-- PORTADA DEL MANGA CON MARCO Y BRILLO ELEGANTE -->
+      <div class="shrink-0 relative group">
+        <div class="absolute -inset-1 bg-gradient-to-r from-bl-primary to-bl-accent rounded-2xl blur-md opacity-40 group-hover:opacity-75 transition duration-500"></div>
+        <div class="relative w-56 sm:w-64 md:w-72 aspect-[2/3] rounded-xl overflow-hidden bg-bl-card border border-bl-cardBorder shadow-2xl">
+          <img
+            src={manga.coverImageUrl}
+            alt={manga.title}
+            class="w-full h-full object-cover object-center group-hover:scale-105 transition duration-500"
+            loading="eager"
+          />
+          <div class="absolute top-3 left-3">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-bl-dark/85 backdrop-blur-md text-bl-primary border border-bl-primary/40">
+              <span class="w-1.5 h-1.5 rounded-full bg-bl-primary animate-pulse"></span>
+              Destacado
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- INFORMACIÓN Y LLAMADAS A LA ACCIÓN -->
+      <div class="flex-1 text-center md:text-left space-y-5">
+        
+        <!-- TAGS Y ESTADO -->
+        <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
+          <span class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            {manga.status === 'publishing' ? 'En Emisión' : manga.status}
+          </span>
+          <span class="text-xs text-bl-muted flex items-center gap-1">
+            <svg class="w-4 h-4 text-bl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            {totalChapters} {totalChapters === 1 ? 'capítulo' : 'capítulos'}
+          </span>
+        </div>
+
+        <!-- TÍTULO -->
+        <div>
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white font-heading">
+            {manga.title}
+          </h1>
+          {manga.alternativeTitles && (
+            <p class="text-sm text-bl-muted mt-1 font-medium italic">
+              {manga.alternativeTitles}
+            </p>
+          )}
+        </div>
+
+        <!-- GÉNEROS -->
+        <div class="flex flex-wrap justify-center md:justify-start gap-1.5">
+          {genresList.map((genre) => (
+            <a
+              href={`/mangas?genre=${encodeURIComponent(genre)}`}
+              class="px-2.5 py-0.5 rounded text-xs bg-bl-surface hover:bg-bl-surfaceHover text-gray-300 hover:text-white border border-bl-cardBorder transition-colors"
+            >
+              {genre}
+            </a>
+          ))}
+        </div>
+
+        <!-- SINOPSIS -->
+        <p class="text-sm md:text-base text-gray-300 leading-relaxed max-w-2xl line-clamp-3 md:line-clamp-4">
+          {manga.synopsis}
+        </p>
+
+        <!-- BOTONES DE ACCIÓN (Leer manga / Ver capítulos) -->
+        <div class="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-4">
+          <a
+            href={`/leer/${manga.slug}/${firstChapterNumber}`}
+            class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-bl-primary via-cyan-400 to-bl-accent text-black hover:opacity-95 shadow-neon hover:shadow-neon-strong transition duration-300 active:scale-95"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Leer manga</span>
+          </a>
+
+          <a
+            href={`/mangas/${manga.slug}`}
+            class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm bg-bl-card hover:bg-bl-surface border border-bl-cardBorder hover:border-bl-primary/50 text-white transition duration-300 active:scale-95"
+          >
+            <svg class="w-5 h-5 text-bl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            <span>Ver capítulos</span>
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</section>

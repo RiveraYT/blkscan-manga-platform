@@ -1,0 +1,127 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import { MangaService } from '../../lib/services/manga.service';
+import ChapterList from '../../components/manga/ChapterList';
+import { formatDate } from '../../lib/utils';
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/mangas');
+}
+
+const data = await MangaService.getMangaBySlug(slug, false);
+
+if (!data) {
+  return Astro.redirect('/404');
+}
+
+const { manga, chapters } = data;
+const genres = manga.genres.split(',').map((g) => g.trim());
+---
+
+<PublicLayout
+  title={`${manga.title} - Leer Online y Capítulos | BLK SCAN`}
+  description={`Lee ${manga.title} online en español. ${manga.synopsis.slice(0, 150)}...`}
+  image={manga.coverImageUrl}
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+    
+    <!-- ENCABEZADO Y FICHA DEL MANGA -->
+    <div class="p-6 md:p-8 rounded-2xl bg-bl-card/70 border border-bl-cardBorder/80 backdrop-blur-md shadow-2xl relative overflow-hidden mb-12">
+      <!-- Glow superior -->
+      <div class="absolute -top-24 right-0 w-96 h-96 bg-bl-primary/10 blur-[100px] pointer-events-none rounded-full"></div>
+
+      <div class="flex flex-col md:flex-row gap-8 items-start relative z-10">
+        
+        <!-- PORTADA -->
+        <div class="shrink-0 mx-auto md:mx-0 w-56 sm:w-64 rounded-xl overflow-hidden border border-bl-cardBorder shadow-2xl bg-bl-dark aspect-[2/3] relative group">
+          <img
+            src={manga.coverImageUrl}
+            alt={manga.title}
+            class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+          />
+          <div class="absolute top-3 left-3">
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-bl-dark/90 text-bl-primary border border-bl-primary/40 backdrop-blur-md">
+              {manga.status === 'publishing' ? 'En Emisión' : manga.status}
+            </span>
+          </div>
+        </div>
+
+        <!-- DETALLES E INFORMACIÓN -->
+        <div class="flex-1 space-y-4">
+          <div>
+            <div class="flex flex-wrap items-center gap-2 mb-1">
+              <span class="text-xs text-bl-muted font-mono uppercase">Manga Oficial</span>
+              <span class="text-xs text-gray-500">•</span>
+              <span class="text-xs text-bl-muted">Actualizado: {formatDate(manga.updatedAt)}</span>
+            </div>
+            <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white font-heading">
+              {manga.title}
+            </h1>
+            {manga.alternativeTitles && (
+              <p class="text-sm text-bl-muted mt-1 italic">
+                {manga.alternativeTitles}
+              </p>
+            )}
+          </div>
+
+          <!-- GÉNEROS -->
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            {genres.map((g) => (
+              <a
+                href={`/mangas?genre=${encodeURIComponent(g)}`}
+                class="px-2.5 py-1 rounded-lg text-xs font-medium bg-bl-surface hover:bg-bl-surfaceHover text-gray-300 hover:text-white border border-bl-cardBorder transition-colors"
+              >
+                {g}
+              </a>
+            ))}
+          </div>
+
+          <!-- SINOPSIS -->
+          <div class="pt-2">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-bl-primary mb-1.5">Sinopsis</h2>
+            <p class="text-sm sm:text-base text-gray-300 leading-relaxed">
+              {manga.synopsis}
+            </p>
+          </div>
+
+          <!-- METADATOS TÉCNICOS: AUTOR, ILUSTRADOR, CAPÍTULOS -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-bl-cardBorder/60 text-xs">
+            <div>
+              <span class="text-bl-muted block">Guión / Historia</span>
+              <span class="text-white font-semibold">{manga.author || 'Muneyuki Kaneshiro'}</span>
+            </div>
+            <div>
+              <span class="text-bl-muted block">Ilustración / Arte</span>
+              <span class="text-white font-semibold">{manga.artist || 'Yusuke Nomura'}</span>
+            </div>
+            <div>
+              <span class="text-bl-muted block">Capítulos Disponibles</span>
+              <span class="text-bl-primary font-bold">{chapters.length} publicados</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SECCIÓN DE CAPÍTULOS -->
+    <div class="space-y-6">
+      <div class="flex items-center justify-between border-b border-bl-cardBorder/60 pb-4">
+        <div>
+          <h2 class="text-2xl font-extrabold text-white font-heading">Lista de Capítulos</h2>
+          <p class="text-xs text-bl-muted mt-0.5">Explora y lee todos los capítulos publicados sin interrupciones.</p>
+        </div>
+        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-bl-surface border border-bl-cardBorder text-gray-300">
+          Total: {chapters.length}
+        </span>
+      </div>
+
+      <!-- COMPONENTE INTERACTIVO DE CAPÍTULOS CON ORDEN, BÚSQUEDA Y CONTINUAR LEYENDO -->
+      <ChapterList client:load chapters={chapters} mangaSlug={manga.slug} />
+    </div>
+
+  </div>
+</PublicLayout>

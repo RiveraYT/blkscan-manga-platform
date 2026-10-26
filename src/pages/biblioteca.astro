@@ -1,0 +1,81 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+---
+
+<PublicLayout
+  title="Mi Biblioteca y Continuar Leyendo | BLK SCAN"
+  description="Revisa tu progreso de lectura y continúa tus capítulos pendientes donde los dejaste."
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="mb-8">
+      <h1 class="text-3xl font-extrabold text-white font-heading">
+        Mi <span class="text-bl-primary">Biblioteca</span>
+      </h1>
+      <p class="text-xs text-bl-muted mt-1">
+        Historial de lectura y capítulos guardados en tu navegador.
+      </p>
+    </div>
+
+    <div id="history-container" class="space-y-4">
+      <!-- Se llena dinámicamente con localStorage -->
+      <div id="loading-state" class="text-center py-12 text-xs text-bl-muted">
+        Cargando historial de lectura...
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const container = document.getElementById('history-container');
+    const loading = document.getElementById('loading-state');
+
+    function renderHistory() {
+      const keys = Object.keys(localStorage).filter(k => k.startsWith('blk_read_'));
+      if (keys.length === 0) {
+        if (container) {
+          container.innerHTML = `
+            <div class="p-12 text-center rounded-2xl bg-bl-card border border-bl-cardBorder max-w-md mx-auto">
+              <svg class="w-12 h-12 text-bl-muted mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <h3 class="text-base font-bold text-white mb-1">Sin historial todavía</h3>
+              <p class="text-xs text-bl-muted mb-4">Empieza a leer Blue Lock para guardar tu progreso automático.</p>
+              <a href="/leer/blue-lock/1" class="inline-block px-4 py-2 rounded-xl text-xs font-bold bg-bl-primary text-black">
+                Leer Blue Lock Cap. 1
+              </a>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
+      keys.forEach(k => {
+        const slug = k.replace('blk_read_', '');
+        try {
+          const item = JSON.parse(localStorage.getItem(k) || '{}');
+          html += `
+            <div class="p-4 rounded-xl bg-bl-card border border-bl-cardBorder flex items-center justify-between">
+              <div>
+                <span class="text-xs text-bl-primary font-bold uppercase tracking-wider block">${slug.replace(/-/g, ' ')}</span>
+                <span class="text-sm font-bold text-white block mt-0.5">Capítulo ${item.chapterNumber}</span>
+                <span class="text-[11px] text-bl-muted block">Última página vista: ${item.page || 1}</span>
+              </div>
+              <a href="/leer/${slug}/${item.chapterNumber}" class="px-3.5 py-1.5 rounded-lg bg-bl-primary text-black text-xs font-bold shadow-neon-sm hover:bg-cyan-300 transition-colors">
+                Continuar
+              </a>
+            </div>
+          `;
+        } catch {
+          // ignore
+        }
+      });
+      html += '</div>';
+
+      if (container) {
+        container.innerHTML = html;
+      }
+    }
+
+    renderHistory();
+  </script>
+</PublicLayout>

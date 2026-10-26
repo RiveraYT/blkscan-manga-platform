@@ -1,0 +1,32 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import ZipImporter from '../../../components/admin/ZipImporter';
+import { AdminService } from '../../../lib/services/admin.service';
+
+const mangas = await AdminService.getAllMangas();
+---
+
+<AdminLayout title="Importar Capítulo desde ZIP | BLK SCAN">
+  <div class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-extrabold text-white font-heading">
+          Importar Capítulo <span class="text-bl-primary">desde ZIP</span>
+        </h1>
+        <p class="text-xs text-bl-muted mt-0.5">
+          Descomprime un archivo .ZIP con las páginas, previsualízalas y publícalo en segundos.
+        </p>
+      </div>
+
+      <a href="/admin/capitulos" class="text-xs text-bl-muted hover:text-white">
+        ← Volver a capítulos
+      </a>
+    </div>
+
+    <!-- REACT ISLAND CON EXTRACCIÓN ZIP EN MEMORIA Y PREVISUALIZACIÓN -->
+    <ZipImporter
+      client:load
+      mangas={mangas.map((m) => ({ id: m.id, title: m.title, slug: m.slug }))}
+    />
+  </div>
+</AdminLayout>

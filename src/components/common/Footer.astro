@@ -1,0 +1,55 @@
+<footer class="mt-20 border-t border-bl-cardBorder/60 bg-bl-dark/90 py-12 text-sm text-bl-muted">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      
+      <!-- COLUMNA 1: INFO Y LOGO -->
+      <div class="space-y-3 md:col-span-2">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-bl-primary to-bl-accent flex items-center justify-center shadow-neon-sm">
+            <svg class="w-4 h-4 text-black" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <span class="font-extrabold text-lg text-white">BLK<span class="text-bl-primary">SCAN</span></span>
+        </div>
+        <p class="text-xs text-bl-muted max-w-md leading-relaxed">
+          Plataforma de lectura y administración de mangas por capítulos. Desarrollada con Astro SSR, Neon PostgreSQL, Drizzle ORM y almacenamiento escalable.
+        </p>
+        <p class="text-[11px] text-gray-500">
+          Aviso: Todos los derechos de Blue Lock pertenecen a Muneyuki Kaneshiro, Yusuke Nomura y Kodansha. Proyecto para gestión autorizada y demostración técnica.
+        </p>
+      </div>
+
+      <!-- COLUMNA 2: ENLACES RÁPIDOS -->
+      <div>
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-white mb-3">Navegación</h3>
+        <ul class="space-y-2 text-xs">
+          <li><a href="/" class="hover:text-bl-primary transition-colors">Inicio</a></li>
+          <li><a href="/mangas" class="hover:text-bl-primary transition-colors">Catálogo de Mangas</a></li>
+          <li><a href="/mangas/blue-lock" class="hover:text-bl-primary transition-colors">Blue Lock</a></li>
+          <li><a href="/biblioteca" class="hover:text-bl-primary transition-colors">Historial de Lectura</a></li>
+        </ul>
+      </div>
+
+      <!-- COLUMNA 3: ACCESO & ESTADO -->
+      <div>
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-white mb-3">Administración</h3>
+        <ul class="space-y-2 text-xs">
+          <li><a href="/admin/login" class="hover:text-bl-primary transition-colors">Ingresar al Panel</a></li>
+          <li><a href="/admin" class="hover:text-bl-primary transition-colors">Gestión de Capítulos</a></li>
+          <li><span class="inline-flex items-center gap-1.5 text-emerald-400 font-mono text-[11px]"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Sistema Operativo</span></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="pt-6 border-t border-bl-cardBorder/40 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-4">
+      <p>&copy; {new Date().getFullYear()} BLK SCAN. Todos los derechos reservados.</p>
+      <div class="flex items-center gap-4 text-xs">
+        <a href="#" class="hover:underline">Privacidad</a>
+        <a href="#" class="hover:underline">Términos de Servicio</a>
+        <a href="#" class="hover:underline">Contacto</a>
+      </div>
+    </div>
+  </div>
+</footer>

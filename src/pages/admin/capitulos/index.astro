@@ -1,0 +1,133 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { AdminService } from '../../../lib/services/admin.service';
+import { formatDate } from '../../../lib/utils';
+
+const mangaId = Astro.url.searchParams.get('mangaId') || undefined;
+const chapters = await AdminService.getChapters(mangaId);
+const mangas = await AdminService.getAllMangas();
+---
+
+<AdminLayout title="Gestión de Capítulos | BLK SCAN">
+  <div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-extrabold text-white font-heading">
+          Gestión de <span class="text-bl-primary">Capítulos</span>
+        </h1>
+        <p class="text-xs text-bl-muted mt-1">
+          Administra la publicación, páginas y estados de cada lanzamiento.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a
+          href="/admin/capitulos/importar-zip"
+          class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-bl-card border border-bl-cardBorder hover:border-bl-primary/40 text-white transition-colors flex items-center gap-1.5"
+        >
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <span>Importar ZIP</span>
+        </a>
+        <a
+          href="/admin/capitulos/nuevo"
+          class="px-4 py-2 rounded-xl text-xs font-bold bg-bl-primary text-black hover:bg-cyan-300 transition-colors shadow-neon-sm flex items-center gap-1.5"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Nuevo Capítulo</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- FILTRO POR MANGA -->
+    <div class="p-3 bg-bl-card border border-bl-cardBorder rounded-xl flex items-center gap-3">
+      <span class="text-xs font-semibold text-bl-muted">Filtrar por manga:</span>
+      <select
+        onchange="window.location.href = this.value ? `/admin/capitulos?mangaId=${this.value}` : '/admin/capitulos'"
+        class="bg-bl-dark border border-bl-cardBorder text-xs text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-bl-primary"
+      >
+        <option value="">Todos los mangas</option>
+        {mangas.map((m) => (
+          <option value={m.id} selected={mangaId === m.id}>
+            {m.title}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <!-- TABLA DE CAPÍTULOS -->
+    <div class="rounded-2xl bg-bl-card border border-bl-cardBorder overflow-hidden shadow-xl">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-bl-dark/80 text-bl-muted border-b border-bl-cardBorder uppercase text-[10px] tracking-wider font-semibold">
+            <tr>
+              <th class="px-5 py-3.5">Manga</th>
+              <th class="px-5 py-3.5">Capítulo</th>
+              <th class="px-5 py-3.5">Título</th>
+              <th class="px-5 py-3.5">Páginas</th>
+              <th class="px-5 py-3.5">Publicación</th>
+              <th class="px-5 py-3.5">Estado</th>
+              <th class="px-5 py-3.5 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-bl-cardBorder/50 text-gray-200">
+            {chapters.length === 0 ? (
+              <tr>
+                <td colspan="7" class="p-8 text-center text-xs text-bl-muted">
+                  No se encontraron capítulos registrados.
+                </td>
+              </tr>
+            ) : (
+              chapters.map((c) => (
+                <tr class="hover:bg-bl-surface/40 transition-colors">
+                  <td class="px-5 py-3.5 font-bold text-white">
+                    {c.mangaTitle}
+                  </td>
+                  <td class="px-5 py-3.5 font-mono text-bl-primary font-bold">
+                    Cap. {c.chapterNumber}
+                  </td>
+                  <td class="px-5 py-3.5 text-gray-300">
+                    {c.title || <span class="text-bl-muted italic">Sin título</span>}
+                  </td>
+                  <td class="px-5 py-3.5 text-bl-muted">
+                    {c.pagesCount} páginas
+                  </td>
+                  <td class="px-5 py-3.5 text-bl-subtle">
+                    {formatDate(c.publishedAt)}
+                  </td>
+                  <td class="px-5 py-3.5">
+                    <span class={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      c.status === 'published'
+                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                    }`}>
+                      {c.status === 'published' ? 'Publicado' : 'Borrador'}
+                    </span>
+                  </td>
+                  <td class="px-5 py-3.5 text-right">
+                    <div class="flex items-center justify-end gap-2">
+                      <a
+                        href={`/leer/${c.mangaTitle.toLowerCase().replace(/\s+/g, '-')}/${c.chapterNumber}`}
+                        target="_blank"
+                        class="p-1.5 rounded-lg bg-bl-surface hover:text-bl-primary text-gray-300"
+                        title="Probar en el lector"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</AdminLayout>

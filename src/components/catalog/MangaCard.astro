@@ -1,0 +1,72 @@
+---
+import type { Manga } from '../../db/schema';
+
+interface Props {
+  manga: Manga;
+  chapterCount?: number;
+}
+
+const { manga, chapterCount = 0 } = Astro.props;
+const genres = manga.genres.split(',').slice(0, 2).map((g) => g.trim());
+---
+
+<div class="group relative flex flex-col rounded-xl overflow-hidden bg-bl-card border border-bl-cardBorder/70 hover:border-bl-primary/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-neon-sm">
+  <!-- PORTADA CON RATIO MANGA -->
+  <a href={`/mangas/${manga.slug}`} class="relative aspect-[2/3] w-full overflow-hidden bg-bl-surface">
+    <img
+      src={manga.coverImageUrl}
+      alt={manga.title}
+      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+      loading="lazy"
+    />
+    <div class="absolute inset-0 bg-gradient-to-t from-bl-dark via-transparent to-transparent opacity-80 group-hover:opacity-60 transition-opacity"></div>
+    
+    <!-- BADGE DE ESTADO -->
+    <div class="absolute top-2.5 right-2.5">
+      <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-bl-dark/90 text-bl-primary border border-bl-primary/40 backdrop-blur-md">
+        {manga.status === 'publishing' ? 'Emisión' : manga.status}
+      </span>
+    </div>
+
+    <!-- CONTEO DE CAPÍTULOS FLOTANTE -->
+    <div class="absolute bottom-2.5 left-2.5">
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-bl-dark/80 text-white backdrop-blur-md">
+        <svg class="w-3.5 h-3.5 text-bl-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+        {chapterCount} {chapterCount === 1 ? 'capítulo' : 'capítulos'}
+      </span>
+    </div>
+  </a>
+
+  <!-- METADATOS INFERIORES -->
+  <div class="p-3.5 flex-1 flex flex-col justify-between">
+    <div>
+      <a href={`/mangas/${manga.slug}`} class="block font-bold text-sm text-white group-hover:text-bl-primary truncate transition-colors">
+        {manga.title}
+      </a>
+      
+      <!-- GÉNEROS -->
+      <div class="flex flex-wrap gap-1 mt-1.5">
+        {genres.map((g) => (
+          <span class="text-[10px] text-bl-muted bg-bl-surface px-1.5 py-0.5 rounded border border-bl-cardBorder/40">
+            {g}
+          </span>
+        ))}
+      </div>
+    </div>
+
+    <div class="mt-3 pt-2.5 border-t border-bl-cardBorder/40 flex items-center justify-between text-xs">
+      <span class="text-[11px] text-bl-subtle">{manga.author || 'Manga'}</span>
+      <a
+        href={`/mangas/${manga.slug}`}
+        class="text-bl-primary font-semibold text-xs hover:underline flex items-center gap-0.5"
+      >
+        <span>Ficha</span>
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</div>

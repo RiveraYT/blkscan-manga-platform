@@ -1,0 +1,197 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Registrar Nuevo Manga | BLK SCAN">
+  <div class="max-w-3xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-extrabold text-white font-heading">
+          Registrar <span class="text-bl-primary">Nuevo Manga</span>
+        </h1>
+        <p class="text-xs text-bl-muted mt-0.5">Ingresa los datos y la portada del nuevo título.</p>
+      </div>
+      <a href="/admin/mangas" class="text-xs text-bl-muted hover:text-white">
+        ← Volver a mangas
+      </a>
+    </div>
+
+    <form action="/api/admin/mangas" method="POST" enctype="multipart/form-data" class="p-6 rounded-2xl bg-bl-card border border-bl-cardBorder space-y-5 shadow-xl">
+      
+      <!-- TÍTULO Y SLUG -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-gray-300">Título Principal *</label>
+          <input
+            type="text"
+            id="manga-title"
+            name="title"
+            required
+            placeholder="Ej. Blue Lock"
+            class="w-full bg-bl-dark border border-bl-cardBorder rounded-xl px-3 py-2 text-xs text-white placeholder-bl-muted focus:outline-none focus:border-bl-primary"
+          />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-gray-300">Slug de URL *</label>
+          <input
+            type="text"
+            id="manga-slug"
+            name="slug"
+            required
+            placeholder="blue-lock"
+            class="w-full bg-bl-dark border border-bl-cardBorder rounded-xl px-3 py-2 text-xs text-white placeholder-bl-muted focus:outline-none focus:border-bl-primary font-mono"
+          />
+        </div>
+      </div>
+
+      <!-- TÍTULOS ALTERNATIVOS -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold text-gray-300">Títulos Alternativos (Opcional)</label>
+        <input
+          type="text"
+          name="alternativeTitles"
+          placeholder="Ej. ブルーロック, Blue Lock: Egoist Striker"
+          class="w-full bg-bl-dark border border-bl-cardBorder rounded-xl px-3 py-2 text-xs text-white placeholder-bl-muted focus:outline-none focus:border-bl-primary"
+        />
+      </div>
+
+      <!-- AUTOR Y ARTISTA -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-gray-300">Autor / Guión</label>
+          <input
+            type="text"
+            name="author"
+            placeholder="Ej. Muneyuki Kaneshiro"
+            class="w-full bg-bl-dark border border-bl-cardBorder rounded-xl px-3 py-2 text-xs text-white placeholder-bl-muted focus:outline-none focus:border-bl-primary"
+          />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-gray-300">Artista / Ilustrador</label>
+          <input
+            type="text"
+            name="artist"
+            placeholder="Ej. Yusuke Nomura"
+            class="w-full bg-bl-dark border border-bl-cardBorder rounded-xl px-3 py-2 text-xs text-white placeholder-bl-muted focus:outline-none focus:border-bl-primary"
+          />
+        </div>
+      </div>
+
+      <!-- GÉNEROS Y ESTADO -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-gray-300">Géneros (Separados por coma) *</label>
+          <input
+            type="text"
+            name="genres"
+            required
+            placeholder="Deportes, Shonen, Psicológico, Acción"
+            class="w-full bg-bl-dark border border-bl-cardBorder rounded-xl px-3 py-2 text-xs text-white placeholder-bl-muted focus:outline-none focus:border-bl-primary"
+          />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-gray-300">Estado de Publicación</label>
+          <select
+            name="status"
+            class="w-full bg-bl-dark border border-bl-cardBorder rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-bl-primary"
+          >
+            <option value="publishing">En Emisión (Publishing)</option>
+            <option value="completed">Finalizado (Completed)</option>
+            <option value="hiatus">En Pausa (Hiatus)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- SINOPSIS -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold text-gray-300">Sinopsis *</label>
+        <textarea
+          name="synopsis"
+          required
+          rows="4"
+          placeholder="Escribe la descripción y argumento principal del manga..."
+          class="w-full bg-bl-dark border border-bl-cardBorder rounded-xl px-3 py-2 text-xs text-white placeholder-bl-muted focus:outline-none focus:border-bl-primary"
+        ></textarea>
+      </div>
+
+      <!-- SUBIDA DE PORTADA -->
+      <div class="space-y-1.5 p-4 rounded-xl bg-bl-dark border border-bl-cardBorder">
+        <label class="text-xs font-semibold text-white block">Imagen de Portada *</label>
+        <p class="text-[11px] text-bl-muted mb-3">Formatos aceptados: JPEG, PNG, WebP. Tamaño recomendado: 800x1200 px.</p>
+        
+        <input
+          type="file"
+          name="coverFile"
+          accept="image/jpeg,image/png,image/webp"
+          class="block w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-bl-surface file:text-bl-primary hover:file:bg-bl-surfaceHover cursor-pointer"
+        />
+
+        <div class="pt-2">
+          <span class="text-[11px] text-bl-muted block">O proporciona una URL directa de imagen:</span>
+          <input
+            type="url"
+            name="coverUrl"
+            placeholder="https://..."
+            class="w-full mt-1 bg-bl-card border border-bl-cardBorder rounded-lg px-3 py-1.5 text-xs text-white placeholder-bl-muted focus:outline-none focus:border-bl-primary"
+          />
+        </div>
+      </div>
+
+      <!-- DESTACADO -->
+      <div class="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="featured"
+          name="featured"
+          value="true"
+          class="rounded accent-cyan-400"
+        />
+        <label for="featured" class="text-xs text-gray-300">
+          Marcar como manga destacado en el Hero Banner principal
+        </label>
+      </div>
+
+      <div class="pt-4 border-t border-bl-cardBorder flex items-center justify-end gap-3">
+        <a
+          href="/admin/mangas"
+          class="px-4 py-2 rounded-xl text-xs font-semibold text-bl-muted hover:text-white"
+        >
+          Cancelar
+        </a>
+        <button
+          type="submit"
+          class="px-6 py-2.5 rounded-xl text-xs font-bold bg-bl-primary text-black hover:bg-cyan-300 shadow-neon-sm transition-all"
+        >
+          Guardar Manga
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+  <script>
+    // Auto-generación de slug a partir del título
+    const titleInput = document.getElementById('manga-title') as HTMLInputElement | null;
+    const slugInput = document.getElementById('manga-slug') as HTMLInputElement | null;
+
+    titleInput?.addEventListener('input', () => {
+      if (slugInput && !slugInput.dataset.manual) {
+        slugInput.value = titleInput.value
+          .toLowerCase()
+          .trim()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9 -]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-');
+      }
+    });
+
+    slugInput?.addEventListener('input', () => {
+      if (slugInput) slugInput.dataset.manual = 'true';
+    });
+  </script>
+</AdminLayout>

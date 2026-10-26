@@ -1,0 +1,62 @@
+---
+import { MangaService } from '../../../lib/services/manga.service';
+import MangaReader from '../../../components/reader/MangaReader';
+import '../../../styles/global.css';
+
+const { mangaSlug, chapterNumber } = Astro.params;
+
+if (!mangaSlug || !chapterNumber) {
+  return Astro.redirect('/mangas');
+}
+
+const readerData = await MangaService.getChapterForReader(mangaSlug, chapterNumber);
+
+if (!readerData) {
+  return Astro.redirect(`/mangas/${mangaSlug}`);
+}
+
+const { manga, chapter, pages, prevChapter, nextChapter, allChapters } = readerData;
+---
+
+<!doctype html>
+<html lang="es" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Leer {manga.title} - Cap. {chapter.chapterNumber} | BLK SCAN</title>
+    <meta name="description" content={`Lee el capítulo ${chapter.chapterNumber} de ${manga.title} online en BLK SCAN.`} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body class="bg-bl-dark text-white select-none overflow-x-hidden">
+    <MangaReader
+      client:only="react"
+      manga={{
+        slug: manga.slug,
+        title: manga.title,
+      }}
+      chapter={{
+        id: chapter.id,
+        chapterNumber: String(chapter.chapterNumber),
+        title: chapter.title,
+      }}
+      pages={pages.map((p) => ({
+        id: p.id,
+        pageNumber: p.pageNumber,
+        imageUrl: p.imageUrl,
+        width: p.width,
+        height: p.height,
+      }))}
+      prevChapter={prevChapter ? {
+        id: prevChapter.id,
+        chapterNumber: String(prevChapter.chapterNumber),
+        title: prevChapter.title,
+      } : null}
+      nextChapter={nextChapter ? {
+        id: nextChapter.id,
+        chapterNumber: String(nextChapter.chapterNumber),
+        title: nextChapter.title,
+      } : null}
+      allChapters={allChapters}
+    />
+  </body>
+</html>

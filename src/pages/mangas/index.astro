@@ -1,0 +1,176 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import MangaCard from '../../components/catalog/MangaCard.astro';
+import { MangaService } from '../../lib/services/manga.service';
+
+const search = Astro.url.searchParams.get('q') || '';
+const genre = Astro.url.searchParams.get('genre') || '';
+const status = Astro.url.searchParams.get('status') || 'all';
+const sortBy = (Astro.url.searchParams.get('sort') || 'updated') as 'updated' | 'title';
+const page = parseInt(Astro.url.searchParams.get('page') || '1', 10);
+
+const catalogData = await MangaService.getCatalog({
+  search,
+  genre,
+  status,
+  sortBy,
+  page,
+  limit: 12,
+});
+
+const genresList = [
+  'Todos',
+  'Deportes',
+  'Shonen',
+  'Psicológico',
+  'Acción',
+  'Drama',
+  'Comedia',
+  'Fantasía',
+  'Sobrenatural',
+];
+---
+
+<PublicLayout
+  title="Catálogo de Mangas | BLK SCAN"
+  description="Explora todos los títulos disponibles en BLK SCAN con filtros por género, estado y búsqueda avanzada."
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+    
+    <!-- ENCABEZADO DEL CATÁLOGO -->
+    <div class="mb-8">
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-white font-heading">
+        Catálogo de <span class="text-bl-primary">Mangas</span>
+      </h1>
+      <p class="text-sm text-bl-muted mt-1">
+        Explora nuestros títulos oficiales, filtra por tus categorías preferidas y encuentra tu próxima lectura.
+      </p>
+    </div>
+
+    <!-- PANEL DE FILTROS Y BÚSQUEDA -->
+    <form method="GET" class="p-4 sm:p-6 rounded-2xl bg-bl-card border border-bl-cardBorder mb-10 space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Búsqueda por texto -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-gray-300">Buscar por título</label>
+          <div class="relative">
+            <input
+              type="text"
+              name="q"
+              value={search}
+              placeholder="Ej. Blue Lock..."
+              class="w-full bg-bl-dark border border-bl-cardBorder rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-bl-muted focus:outline-none focus:border-bl-primary transition-all"
+            />
+            <svg class="w-4 h-4 text-bl-muted absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Filtro por Género -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-gray-300">Género</label>
+          <select
+            name="genre"
+            class="w-full bg-bl-dark border border-bl-cardBorder rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-bl-primary transition-all"
+          >
+            {genresList.map((g) => (
+              <option value={g === 'Todos' ? '' : g} selected={genre === (g === 'Todos' ? '' : g)}>
+                {g}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <!-- Filtro por Estado -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-gray-300">Estado</label>
+          <select
+            name="status"
+            class="w-full bg-bl-dark border border-bl-cardBorder rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-bl-primary transition-all"
+          >
+            <option value="all" selected={status === 'all'}>Todos los estados</option>
+            <option value="publishing" selected={status === 'publishing'}>En Emisión</option>
+            <option value="completed" selected={status === 'completed'}>Finalizado</option>
+            <option value="hiatus" selected={status === 'hiatus'}>En Pausa</option>
+          </select>
+        </div>
+
+        <!-- Orden -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-gray-300">Ordenar por</label>
+          <select
+            name="sort"
+            class="w-full bg-bl-dark border border-bl-cardBorder rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-bl-primary transition-all"
+          >
+            <option value="updated" selected={sortBy === 'updated'}>Última actualización</option>
+            <option value="title" selected={sortBy === 'title'}>Nombre (A-Z)</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-2 border-t border-bl-cardBorder/50">
+        <a
+          href="/mangas"
+          class="px-4 py-2 text-xs font-medium text-bl-muted hover:text-white transition-colors"
+        >
+          Limpiar filtros
+        </a>
+        <button
+          type="submit"
+          class="px-5 py-2 rounded-xl text-xs font-bold bg-bl-primary text-black hover:bg-cyan-300 transition-colors shadow-neon-sm"
+        >
+          Aplicar Filtros
+        </button>
+      </div>
+    </form>
+
+    <!-- RESULTADOS DEL CATÁLOGO -->
+    {catalogData.items.length === 0 ? (
+      <div class="p-12 text-center rounded-2xl bg-bl-card border border-bl-cardBorder max-w-lg mx-auto">
+        <div class="w-12 h-12 rounded-full bg-bl-surface text-bl-muted flex items-center justify-center mx-auto mb-3">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 class="text-base font-bold text-white mb-1">No se encontraron resultados</h3>
+        <p class="text-xs text-bl-muted mb-4">Prueba ajustando los filtros de búsqueda o restableciendo los parámetros.</p>
+        <a href="/mangas" class="inline-block px-4 py-2 rounded-lg text-xs font-semibold bg-bl-surface hover:bg-bl-surfaceHover text-white">
+          Ver todo el catálogo
+        </a>
+      </div>
+    ) : (
+      <div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
+          {catalogData.items.map((item) => (
+            <MangaCard manga={item.manga} chapterCount={item.chapterCount} />
+          ))}
+        </div>
+
+        <!-- PAGINACIÓN -->
+        {catalogData.totalPages > 1 && (
+          <div class="flex items-center justify-center gap-2 mt-12">
+            {Array.from({ length: catalogData.totalPages }, (_, i) => i + 1).map((p) => {
+              const isCurrent = p === catalogData.page;
+              return (
+                <a
+                  href={`/mangas?page=${p}&q=${encodeURIComponent(search)}&genre=${encodeURIComponent(genre)}&status=${status}&sort=${sortBy}`}
+                  class={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold transition-all ${
+                    isCurrent
+                      ? 'bg-bl-primary text-black shadow-neon-sm'
+                      : 'bg-bl-card border border-bl-cardBorder text-gray-300 hover:text-white hover:bg-bl-surface'
+                  }`}
+                >
+                  {p}
+                </a>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    )}
+
+  </div>
+</PublicLayout>
