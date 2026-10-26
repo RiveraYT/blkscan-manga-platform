@@ -10,7 +10,6 @@ import {
   BookOpen,
   ArrowLeft,
   RotateCcw,
-  List,
   Columns,
   FileText,
   AlignVerticalJustifyCenter,
@@ -18,7 +17,6 @@ import {
 } from 'lucide-react';
 
 export type ReadingMode = 'single' | 'double' | 'vertical' | 'fit';
-export type ReadingDirection = 'ltr' | 'rtl'; // ltr: Left to Right, rtl: Right to Left (Manga standard)
 export type ImageFit = 'width' | 'height' | 'original';
 
 export interface PageItem {
@@ -61,17 +59,15 @@ export default function MangaReader({
 }: MangaReaderProps) {
   // Preferencias con persistencia en localStorage
   const [readingMode, setReadingMode] = useState<ReadingMode>('single');
-  const [readingDirection, setReadingDirection] = useState<ReadingDirection>('rtl');
   const [imageFit, setImageFit] = useState<ImageFit>('height');
   const [backgroundColor, setBackgroundColor] = useState<string>('#070a12');
 
-  // Estado del lector
+  // Estado del lector (Navegación siempre de Izquierda a Derecha)
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [showControls, setShowControls] = useState<boolean>(true);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [failedPages, setFailedPages] = useState<Record<number, boolean>>({});
-  const [loadedPages, setLoadedPages] = useState<Record<number, boolean>>({});
 
   const containerRef = useRef<HTMLDivElement>(null);
   const totalPages = pages.length;
@@ -79,17 +75,18 @@ export default function MangaReader({
   // Cargar preferencias e historial previo al montar
   useEffect(() => {
     try {
+      // Limpiar residuo de RTL previo si existía en caché
+      localStorage.removeItem('blk_pref_dir');
+
       const savedMode = localStorage.getItem('blk_pref_mode') as ReadingMode;
-      const savedDir = localStorage.getItem('blk_pref_dir') as ReadingDirection;
       const savedFit = localStorage.getItem('blk_pref_fit') as ImageFit;
       const savedBg = localStorage.getItem('blk_pref_bg');
 
       if (savedMode) setReadingMode(savedMode);
-      if (savedDir) setReadingDirection(savedDir);
       if (savedFit) setImageFit(savedFit);
       if (savedBg) setBackgroundColor(savedBg);
 
-      // Cargar última página si coincide el capítulo
+      // Cargar última página leída si coincide con el capítulo actual
       const historyKey = `blk_read_${manga.slug}`;
       const savedHist = localStorage.getItem(historyKey);
       if (savedHist) {
@@ -128,11 +125,6 @@ export default function MangaReader({
     localStorage.setItem('blk_pref_mode', m);
   };
 
-  const updateDirection = (d: ReadingDirection) => {
-    setReadingDirection(d);
-    localStorage.setItem('blk_pref_dir', d);
-  };
-
   const updateFit = (f: ImageFit) => {
     setImageFit(f);
     localStorage.setItem('blk_pref_fit', f);
@@ -143,7 +135,7 @@ export default function MangaReader({
     localStorage.setItem('blk_pref_bg', bg);
   };
 
-  // Navegación de páginas
+  // Navegación secuencial de Izquierda a Derecha
   const goToNext = useCallback(() => {
     if (readingMode === 'double') {
       if (currentPage + 2 <= totalPages) {
@@ -180,18 +172,17 @@ export default function MangaReader({
     }
   }, [currentPage, readingMode, prevChapter, manga.slug]);
 
-  // Manejo de flechas físicas del teclado
+  // Navegación con teclado: Izquierda = Anterior, Derecha = Siguiente
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignorar si se enfoca un input o select
       if (['INPUT', 'SELECT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
         return;
       }
 
       if (e.key === 'ArrowRight') {
-        readingDirection === 'rtl' ? goToPrev() : goToNext();
+        goToNext();
       } else if (e.key === 'ArrowLeft') {
-        readingDirection === 'rtl' ? goToNext() : goToPrev();
+        goToPrev();
       } else if (e.key === 'f' || e.key === 'F') {
         toggleFullscreen();
       } else if (e.key === 'h' || e.key === 'H') {
@@ -201,9 +192,9 @@ export default function MangaReader({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [readingDirection, goToNext, goToPrev]);
+  }, [goToNext, goToPrev]);
 
-  // Precargar las siguientes 2 imágenes
+  // Precargar las siguientes páginas
   useEffect(() => {
     if (readingMode === 'vertical') return;
     const preloadIndexes = [currentPage, currentPage + 1, currentPage + 2];
@@ -226,7 +217,6 @@ export default function MangaReader({
     }
   };
 
-  // Escuchar cambio de fullscreen nativo
   useEffect(() => {
     const onFsChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -240,10 +230,13 @@ export default function MangaReader({
     setFailedPages((prev) => ({ ...prev, [pageNumber]: false }));
   };
 
-  // Helper de ajuste de imagen
+  // Clases de ajuste de imagen según modo
   const getImageFitClass = () => {
-    if (imageFit === 'width') return 'w-full h-auto max-w-5xl mx-auto';
-    if (imageFit === 'height') return 'h-[86vh] w-auto max-w-full object-contain mx-auto';
+    if (readingMode === 'fit') {
+      return 'max-h-[88vh] max-w-[95vw] w-auto h-auto object-contain mx-auto shadow-2xl rounded-sm';
+    }
+    if (imageFit === 'width') return 'w-full h-auto max-w-5xl mx-auto shadow-2xl';
+    if (imageFit === 'height') return 'h-[86vh] w-auto max-w-full object-contain mx-auto shadow-2xl';
     return 'max-w-none mx-auto'; // Original
   };
 
@@ -298,9 +291,17 @@ export default function MangaReader({
             </select>
           </div>
 
-          {/* Lado derecho: Acciones y modales */}
+          {/* Lado derecho: Acciones y configuración */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {/* Ocultar interfaz botón */}
+            {/* Indicador de modo actual */}
+            <span className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-bl-surface border border-bl-cardBorder text-bl-muted">
+              {readingMode === 'single' && 'Modo Individual'}
+              {readingMode === 'double' && 'Modo Doble Página'}
+              {readingMode === 'vertical' && 'Modo Cascada Vertical'}
+              {readingMode === 'fit' && 'Modo Ajuste Pantalla'}
+            </span>
+
+            {/* Ocultar interfaz */}
             <button
               onClick={() => setShowControls(false)}
               className="p-2 rounded-lg text-gray-300 hover:text-white hover:bg-bl-surface text-xs flex items-center gap-1 transition-colors"
@@ -335,7 +336,7 @@ export default function MangaReader({
         </div>
       </div>
 
-      {/* BOTÓN FLOTANTE PARA RESTAURAR CONTROLES SI SE OCULTARON */}
+      {/* BOTÓN FLOTANTE PARA RESTAURAR CONTROLES */}
       {!showControls && (
         <button
           onClick={() => setShowControls(true)}
@@ -355,7 +356,7 @@ export default function MangaReader({
             <div className="flex items-center justify-between border-b border-bl-cardBorder pb-3">
               <h3 className="font-bold text-white text-base flex items-center gap-2">
                 <Settings className="w-5 h-5 text-bl-primary" />
-                Preferencias de Lectura
+                Preferencias del Lector
               </h3>
               <button
                 onClick={() => setShowSettingsModal(false)}
@@ -365,7 +366,7 @@ export default function MangaReader({
               </button>
             </div>
 
-            {/* MODO DE LECTURA */}
+            {/* MODO DE VISUALIZACIÓN */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-bl-muted block">
                 Modo de Visualización
@@ -376,7 +377,7 @@ export default function MangaReader({
                   onClick={() => updateMode('single')}
                   className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-medium transition-all ${
                     readingMode === 'single'
-                      ? 'border-bl-primary bg-bl-primary/10 text-bl-primary'
+                      ? 'border-bl-primary bg-bl-primary/10 text-bl-primary font-bold'
                       : 'border-bl-cardBorder bg-bl-dark text-gray-300 hover:bg-bl-surface'
                   }`}
                 >
@@ -389,7 +390,7 @@ export default function MangaReader({
                   onClick={() => updateMode('double')}
                   className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-medium transition-all ${
                     readingMode === 'double'
-                      ? 'border-bl-primary bg-bl-primary/10 text-bl-primary'
+                      ? 'border-bl-primary bg-bl-primary/10 text-bl-primary font-bold'
                       : 'border-bl-cardBorder bg-bl-dark text-gray-300 hover:bg-bl-surface'
                   }`}
                 >
@@ -399,104 +400,75 @@ export default function MangaReader({
 
                 <button
                   type="button"
-                  onClick={() => updateMode('vertical')}
-                  className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-medium transition-all ${
-                    readingMode === 'vertical'
-                      ? 'border-bl-primary bg-bl-primary/10 text-bl-primary'
-                      : 'border-bl-cardBorder bg-bl-dark text-gray-300 hover:bg-bl-surface'
-                  }`}
-                >
-                  <AlignVerticalJustifyCenter className="w-4 h-4" />
-                  <span>Cascada Vertical</span>
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => updateMode('fit')}
                   className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-medium transition-all ${
                     readingMode === 'fit'
-                      ? 'border-bl-primary bg-bl-primary/10 text-bl-primary'
+                      ? 'border-bl-primary bg-bl-primary/10 text-bl-primary font-bold'
                       : 'border-bl-cardBorder bg-bl-dark text-gray-300 hover:bg-bl-surface'
                   }`}
                 >
                   <MoveHorizontal className="w-4 h-4" />
                   <span>Ajuste Pantalla</span>
                 </button>
-              </div>
-            </div>
 
-            {/* SENTIDO DE LECTURA */}
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-bl-muted block">
-                Sentido de Navegación
-              </label>
-              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => updateDirection('rtl')}
-                  className={`p-2.5 rounded-xl border text-xs font-medium text-center transition-all ${
-                    readingDirection === 'rtl'
+                  onClick={() => updateMode('vertical')}
+                  className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-medium transition-all ${
+                    readingMode === 'vertical'
                       ? 'border-bl-primary bg-bl-primary/10 text-bl-primary font-bold'
                       : 'border-bl-cardBorder bg-bl-dark text-gray-300 hover:bg-bl-surface'
                   }`}
                 >
-                  Derecha a Izquierda (Manga)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateDirection('ltr')}
-                  className={`p-2.5 rounded-xl border text-xs font-medium text-center transition-all ${
-                    readingDirection === 'ltr'
-                      ? 'border-bl-primary bg-bl-primary/10 text-bl-primary font-bold'
-                      : 'border-bl-cardBorder bg-bl-dark text-gray-300 hover:bg-bl-surface'
-                  }`}
-                >
-                  Izquierda a Derecha (Occidental)
+                  <AlignVerticalJustifyCenter className="w-4 h-4" />
+                  <span>Cascada Vertical</span>
                 </button>
               </div>
             </div>
 
-            {/* AJUSTE DE IMAGEN */}
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-bl-muted block">
-                Ajuste de Escala
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => updateFit('height')}
-                  className={`p-2 rounded-lg border text-xs text-center transition-all ${
-                    imageFit === 'height'
-                      ? 'border-bl-primary bg-bl-primary/10 text-bl-primary'
-                      : 'border-bl-cardBorder bg-bl-dark text-gray-300 hover:bg-bl-surface'
-                  }`}
-                >
-                  Ajustar a Alto
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateFit('width')}
-                  className={`p-2 rounded-lg border text-xs text-center transition-all ${
-                    imageFit === 'width'
-                      ? 'border-bl-primary bg-bl-primary/10 text-bl-primary'
-                      : 'border-bl-cardBorder bg-bl-dark text-gray-300 hover:bg-bl-surface'
-                  }`}
-                >
-                  Ajustar a Ancho
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateFit('original')}
-                  className={`p-2 rounded-lg border text-xs text-center transition-all ${
-                    imageFit === 'original'
-                      ? 'border-bl-primary bg-bl-primary/10 text-bl-primary'
-                      : 'border-bl-cardBorder bg-bl-dark text-gray-300 hover:bg-bl-surface'
-                  }`}
-                >
-                  Original
-                </button>
+            {/* AJUSTE DE IMAGEN (Para modos con escala manual) */}
+            {readingMode !== 'fit' && readingMode !== 'vertical' && (
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-bl-muted block">
+                  Ajuste de Escala
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateFit('height')}
+                    className={`p-2 rounded-lg border text-xs text-center transition-all ${
+                      imageFit === 'height'
+                        ? 'border-bl-primary bg-bl-primary/10 text-bl-primary font-bold'
+                        : 'border-bl-cardBorder bg-bl-dark text-gray-300 hover:bg-bl-surface'
+                    }`}
+                  >
+                    Ajustar a Alto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateFit('width')}
+                    className={`p-2 rounded-lg border text-xs text-center transition-all ${
+                      imageFit === 'width'
+                        ? 'border-bl-primary bg-bl-primary/10 text-bl-primary font-bold'
+                        : 'border-bl-cardBorder bg-bl-dark text-gray-300 hover:bg-bl-surface'
+                    }`}
+                  >
+                    Ajustar a Ancho
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateFit('original')}
+                    className={`p-2 rounded-lg border text-xs text-center transition-all ${
+                      imageFit === 'original'
+                        ? 'border-bl-primary bg-bl-primary/10 text-bl-primary font-bold'
+                        : 'border-bl-cardBorder bg-bl-dark text-gray-300 hover:bg-bl-surface'
+                    }`}
+                  >
+                    Original
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* COLOR DE FONDO */}
             <div className="space-y-2">
@@ -529,14 +501,14 @@ export default function MangaReader({
               onClick={() => setShowSettingsModal(false)}
               className="w-full py-2.5 rounded-xl bg-bl-primary text-black font-bold text-xs hover:bg-cyan-300 transition-colors shadow-neon-sm"
             >
-              Guardar y Continuar Lectura
+              Aplicar y Continuar Lectura
             </button>
           </div>
         </div>
       )}
 
       {/* ========================================================
-          ZONA DE LECTURA PRINCIPAL SEGÚN EL MODO
+          ZONA DE LECTURA PRINCIPAL
          ======================================================== */}
       <main className="flex-1 flex flex-col justify-center items-center py-16 px-2 min-h-screen relative">
         {pages.length === 0 ? (
@@ -557,7 +529,7 @@ export default function MangaReader({
           /* ========================================
              MODO 3: LECTURA VERTICAL CONTINUA
              ======================================== */
-          <div className="w-full max-w-4xl mx-auto flex flex-col items-center space-y-1">
+          <div className="w-full max-w-4xl mx-auto flex flex-col items-center space-y-2">
             {pages.map((p) => {
               const hasError = failedPages[p.pageNumber];
               return (
@@ -607,14 +579,14 @@ export default function MangaReader({
           </div>
         ) : readingMode === 'double' ? (
           /* ========================================
-             MODO 2: PÁGINAS DOBLES
+             MODO 2: PÁGINAS DOBLES (Izquierda a Derecha)
              ======================================== */
           <div className="relative w-full flex items-center justify-center">
-            {/* Zonas de click laterales */}
+            {/* Zonas de click: Izquierda = Anterior, Centro = Controles, Derecha = Siguiente */}
             <div
-              onClick={readingDirection === 'rtl' ? goToNext : goToPrev}
+              onClick={goToPrev}
               className="absolute left-0 inset-y-0 w-1/4 cursor-w-resize z-20"
-              title="Página anterior (o siguiente en RTL)"
+              title="Página anterior (←)"
             />
             <div
               onClick={() => setShowControls((p) => !p)}
@@ -622,69 +594,76 @@ export default function MangaReader({
               title="Mostrar / ocultar controles"
             />
             <div
-              onClick={readingDirection === 'rtl' ? goToPrev : goToNext}
+              onClick={goToNext}
               className="absolute right-0 inset-y-0 w-1/4 cursor-e-resize z-20"
-              title="Página siguiente (o anterior en RTL)"
+              title="Página siguiente (→)"
             />
 
-            <div className="flex flex-col md:flex-row items-center justify-center gap-2 max-w-full">
-              {/* En RTL: la página par va a la derecha y la impar a la izquierda */}
-              {(() => {
-                const page1 = pages[currentPage - 1];
-                const page2 = currentPage < totalPages ? pages[currentPage] : null;
+            {/* Páginas mostradas de Izquierda a Derecha */}
+            {(() => {
+              const leftPage = pages[currentPage - 1]; // Página 1 a la izquierda
+              const rightPage = currentPage < totalPages ? pages[currentPage] : null; // Página 2 a la derecha
 
-                const firstRender = readingDirection === 'rtl' && page2 ? page2 : page1;
-                const secondRender = readingDirection === 'rtl' && page2 ? page1 : page2;
+              return (
+                <div className="flex flex-col md:flex-row items-center justify-center gap-2 max-w-full">
+                  {leftPage && (
+                    <div className="relative flex flex-col items-center justify-center">
+                      <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded text-[10px] font-bold bg-bl-dark/85 text-bl-primary border border-bl-primary/40 backdrop-blur-md">
+                        Pág. {leftPage.pageNumber}
+                      </span>
+                      <img
+                        src={leftPage.imageUrl}
+                        alt={`Página ${leftPage.pageNumber}`}
+                        className={getImageFitClass()}
+                      />
+                    </div>
+                  )}
 
-                return (
-                  <>
-                    {firstRender && (
-                      <div className="relative flex items-center justify-center">
-                        <img
-                          src={firstRender.imageUrl}
-                          alt={`Página ${firstRender.pageNumber}`}
-                          className={getImageFitClass()}
-                        />
-                      </div>
-                    )}
-                    {secondRender && (
-                      <div className="relative hidden md:flex items-center justify-center">
-                        <img
-                          src={secondRender.imageUrl}
-                          alt={`Página ${secondRender.pageNumber}`}
-                          className={getImageFitClass()}
-                        />
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
+                  {rightPage && (
+                    <div className="relative hidden md:flex flex-col items-center justify-center">
+                      <span className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded text-[10px] font-bold bg-bl-dark/85 text-bl-primary border border-bl-primary/40 backdrop-blur-md">
+                        Pág. {rightPage.pageNumber}
+                      </span>
+                      <img
+                        src={rightPage.imageUrl}
+                        alt={`Página ${rightPage.pageNumber}`}
+                        className={getImageFitClass()}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         ) : (
           /* ========================================
-             MODO 1 Y 4: INDIVIDUAL / AUTO-FIT
+             MODO 1 (INDIVIDUAL) Y MODO 4 (AJUSTE PANTALLA)
              ======================================== */
           <div className="relative w-full flex items-center justify-center">
-            {/* Click zones para móviles y escritorio */}
+            {/* Zonas de click: Izquierda = Anterior, Centro = Controles, Derecha = Siguiente */}
             <div
-              onClick={readingDirection === 'rtl' ? goToNext : goToPrev}
+              onClick={goToPrev}
               className="absolute left-0 inset-y-0 w-1/3 cursor-w-resize z-20"
-              title="Navegar"
+              title="Página anterior (←)"
             />
             <div
               onClick={() => setShowControls((p) => !p)}
               className="absolute inset-x-1/3 inset-y-0 cursor-pointer z-10"
-              title="Alternar controles"
+              title="Mostrar / ocultar controles"
             />
             <div
-              onClick={readingDirection === 'rtl' ? goToPrev : goToNext}
+              onClick={goToNext}
               className="absolute right-0 inset-y-0 w-1/3 cursor-e-resize z-20"
-              title="Navegar"
+              title="Página siguiente (→)"
             />
 
             {pages[currentPage - 1] && (
-              <div className="relative flex items-center justify-center">
+              <div className="relative flex flex-col items-center justify-center">
+                {/* Indicador flotante sutil de página actual */}
+                <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded text-[10px] font-bold bg-bl-dark/85 text-bl-primary border border-bl-primary/40 backdrop-blur-md">
+                  Página {currentPage} de {totalPages}
+                </span>
+
                 {failedPages[currentPage] ? (
                   <div className="h-96 w-72 flex flex-col items-center justify-center bg-bl-card border border-red-500/30 rounded-xl p-4 text-center">
                     <p className="text-xs text-red-400 mb-2">Error al cargar la página {currentPage}</p>
@@ -710,7 +689,7 @@ export default function MangaReader({
       </main>
 
       {/* ========================================================
-          BARRA DE NAVEGACIÓN INFERIOR (PAGINADOR Y CAPÍTULOS)
+          BARRA DE NAVEGACIÓN INFERIOR (PAGINADOR DE IZQUIERDA A DERECHA)
          ======================================================== */}
       {readingMode !== 'vertical' && (
         <div
@@ -719,11 +698,12 @@ export default function MangaReader({
           }`}
         >
           <div className="bg-bl-dark/95 backdrop-blur-md border-t border-bl-cardBorder px-4 py-2.5 flex items-center justify-between gap-4 max-w-4xl mx-auto rounded-t-2xl shadow-2xl">
-            {/* Capítulo anterior */}
+            {/* Botón Anterior (Izquierda) */}
             <button
-              onClick={readingDirection === 'rtl' ? goToNext : goToPrev}
+              onClick={goToPrev}
               disabled={currentPage <= 1 && !prevChapter}
               className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-bl-card border border-bl-cardBorder text-xs font-semibold text-white hover:bg-bl-surface disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              title="Página anterior"
             >
               <ChevronLeft className="w-4 h-4 text-bl-primary" />
               <span className="hidden sm:inline">Anterior</span>
@@ -740,15 +720,18 @@ export default function MangaReader({
                 className="w-full accent-cyan-400 cursor-pointer h-1.5 bg-bl-cardBorder rounded-lg"
               />
               <span className="text-xs font-mono font-bold text-white shrink-0">
-                {currentPage} / {totalPages}
+                {readingMode === 'double' && currentPage < totalPages
+                  ? `${currentPage}-${currentPage + 1} / ${totalPages}`
+                  : `${currentPage} / ${totalPages}`}
               </span>
             </div>
 
-            {/* Capítulo siguiente */}
+            {/* Botón Siguiente (Derecha) */}
             <button
-              onClick={readingDirection === 'rtl' ? goToPrev : goToNext}
+              onClick={goToNext}
               disabled={currentPage >= totalPages && !nextChapter}
               className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-bl-primary text-xs font-bold text-black hover:bg-cyan-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-neon-sm"
+              title="Página siguiente"
             >
               <span className="hidden sm:inline">Siguiente</span>
               <ChevronRight className="w-4 h-4" />
