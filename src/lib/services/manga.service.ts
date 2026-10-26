@@ -1,4 +1,6 @@
 import { eq, desc, asc, and, ilike, sql } from 'drizzle-orm';
+import fs from 'node:fs';
+import path from 'node:path';
 import { getDb } from '../../db';
 import { mangas, chapters, chapterPages, readingHistory, readingPreferences } from '../../db/schema';
 import type { Manga, Chapter, ChapterPage } from '../../db/schema';
@@ -75,6 +77,65 @@ const DEMO_CHAPTERS: (Chapter & { pages?: ChapterPage[] })[] = [
   },
 ];
 
+// Lee dinámicamente cualquier capítulo subido a public/uploads/mangas/... en modo local
+function getLocalUploadedChapters(slug: string): (Chapter & { pages?: ChapterPage[] })[] {
+  try {
+    const mangaUploadDir = path.resolve(process.cwd(), 'public/uploads/mangas', slug);
+    if (!fs.existsSync(mangaUploadDir)) return [];
+
+    const dirs = fs.readdirSync(mangaUploadDir, { withFileTypes: true });
+    const localChapters: (Chapter & { pages?: ChapterPage[] })[] = [];
+
+    for (const d of dirs) {
+      if (d.isDirectory() && d.name.startsWith('ch')) {
+        const chapterNumStr = d.name.replace(/^ch/, '');
+        const chPath = path.join(mangaUploadDir, d.name);
+        const files = fs.readdirSync(chPath).filter((f) => /\.(jpe?g|png|webp)$/i.test(f));
+
+        const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+        files.sort(collator.compare);
+
+        const pages: ChapterPage[] = files.map((file, idx) => ({
+          id: `local-p-${chapterNumStr}-${idx + 1}`,
+          chapterId: `local-ch-${chapterNumStr}`,
+          pageNumber: idx + 1,
+          storageKey: `mangas/${slug}/${d.name}/${file}`,
+          imageUrl: `/uploads/mangas/${slug}/${d.name}/${file}`,
+          width: 1200,
+          height: 1800,
+          createdAt: new Date(),
+        }));
+
+        localChapters.push({
+          id: `local-ch-${chapterNumStr}`,
+          mangaId: DEMO_MANGA.id,
+          chapterNumber: chapterNumStr,
+          title: `Capítulo ${chapterNumStr}`,
+          slug: `capitulo-${chapterNumStr}`,
+          description: 'Capítulo subido al almacenamiento local.',
+          status: 'published',
+          publishedAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          pages,
+        });
+      }
+    }
+
+    return localChapters;
+  } catch {
+    return [];
+  }
+}
+
+export function getAllDemoChapters(slug = 'blue-lock'): (Chapter & { pages?: ChapterPage[] })[] {
+  const local = getLocalUploadedChapters(slug);
+  const map = new Map<string, Chapter & { pages?: ChapterPage[] }>();
+  DEMO_CHAPTERS.forEach((c) => map.set(String(c.chapterNumber), c));
+  local.forEach((c) => map.set(String(c.chapterNumber), c));
+  return Array.from(map.values());
+}
+
 export class MangaService {
   private static hasDbConnection(): boolean {
     const url = process.env.DATABASE_URL;
@@ -86,10 +147,12 @@ export class MangaService {
    */
   static async getFeaturedManga(): Promise<{ manga: Manga; totalChapters: number; firstChapterNumber?: string } | null> {
     if (!this.hasDbConnection()) {
+      const all = getAllDemoChapters(DEMO_MANGA.slug);
+      const published = all.filter((c) => c.status === 'published').sort((a, b) => Number(a.chapterNumber) - Number(b.chapterNumber));
       return {
         manga: DEMO_MANGA,
-        totalChapters: DEMO_CHAPTERS.filter((c) => c.status === 'published').length,
-        firstChapterNumber: '1',
+        totalChapters: published.length,
+        firstChapterNumber: published[0]?.chapterNumber || '1',
       };
     }
 
@@ -126,8 +189,10 @@ export class MangaService {
    */
   static async getLatestChapters(limit = 12) {
     if (!this.hasDbConnection()) {
-      return DEMO_CHAPTERS
+      const all = getAllDemoChapters(DEMO_MANGA.slug);
+      return all
         .filter((c) => c.status === 'published')
+        .sort((a, b) => Number(b.chapterNumber) - Number(a.chapterNumber))
         .slice(0, limit)
         .map((c) => ({
           chapter: c,
@@ -182,11 +247,12 @@ export class MangaService {
       if (params.status && params.status !== 'all') {
         list = list.filter((m) => m.status === params.status);
       }
+      const allChaps = getAllDemoChapters(DEMO_MANGA.slug);
       return {
         items: list.map((m) => ({
           manga: m,
-          chapterCount: DEMO_CHAPTERS.filter((c) => c.status === 'published').length,
-          lastChapter: DEMO_CHAPTERS[1],
+          chapterCount: allChaps.filter((c) => c.status === 'published').length,
+          lastChapter: allChaps[allChaps.length - 1] || null,
         })),
         total: list.length,
         page,
@@ -260,7 +326,10 @@ export class MangaService {
   static async getMangaBySlug(slug: string, includeDrafts = false) {
     if (!this.hasDbConnection()) {
       if (slug !== 'blue-lock') return null;
-      const chaps = DEMO_CHAPTERS.filter((c) => includeDrafts || c.status === 'published');
+      const all = getAllDemoChapters(slug);
+      const chaps = all
+        .filter((c) => includeDrafts || c.status === 'published')
+        .sort((a, b) => Number(b.chapterNumber) - Number(a.chapterNumber));
       return {
         manga: DEMO_MANGA,
         chapters: chaps,
@@ -303,10 +372,11 @@ export class MangaService {
 
     if (!this.hasDbConnection()) {
       if (mangaSlug !== 'blue-lock') return null;
-      const chapter = DEMO_CHAPTERS.find((c) => String(c.chapterNumber) === numStr);
+      const all = getAllDemoChapters(mangaSlug);
+      const chapter = all.find((c) => String(c.chapterNumber) === numStr);
       if (!chapter) return null;
 
-      const allChaps = DEMO_CHAPTERS.filter((c) => c.status === 'published').sort((a, b) => Number(a.chapterNumber) - Number(b.chapterNumber));
+      const allChaps = all.filter((c) => c.status === 'published').sort((a, b) => Number(a.chapterNumber) - Number(b.chapterNumber));
       const currentIndex = allChaps.findIndex((c) => c.id === chapter.id);
 
       return {

@@ -3,6 +3,7 @@ import { getDb } from '../../db';
 import { mangas, chapters, chapterPages, users } from '../../db/schema';
 import type { Manga, Chapter, ChapterPage } from '../../db/schema';
 import { storage } from '../storage';
+import { getAllDemoChapters } from './manga.service';
 
 export class AdminService {
   private static hasDb(): boolean {
@@ -15,11 +16,16 @@ export class AdminService {
    */
   static async getDashboardStats() {
     if (!this.hasDb()) {
+      const all = getAllDemoChapters('blue-lock');
+      const published = all.filter((c) => c.status === 'published');
+      const drafts = all.filter((c) => c.status === 'draft');
+      const sortedDesc = [...all].sort((a, b) => Number(b.chapterNumber) - Number(a.chapterNumber));
+
       return {
         totalMangas: 1,
-        totalChapters: 3,
-        publishedChapters: 2,
-        draftChapters: 1,
+        totalChapters: all.length,
+        publishedChapters: published.length,
+        draftChapters: drafts.length,
         recentMangas: [
           {
             id: 'm1',
@@ -29,24 +35,14 @@ export class AdminService {
             updatedAt: new Date(),
           },
         ],
-        recentChapters: [
-          {
-            id: 'c1',
-            mangaTitle: 'Blue Lock',
-            chapterNumber: '2',
-            title: 'Monstruo',
-            status: 'published',
-            publishedAt: new Date(),
-          },
-          {
-            id: 'c2',
-            mangaTitle: 'Blue Lock',
-            chapterNumber: '1',
-            title: 'Sueño',
-            status: 'published',
-            publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7),
-          },
-        ],
+        recentChapters: sortedDesc.slice(0, 5).map((ch) => ({
+          id: ch.id,
+          mangaTitle: 'Blue Lock',
+          chapterNumber: String(ch.chapterNumber),
+          title: ch.title,
+          status: ch.status,
+          publishedAt: ch.publishedAt,
+        })),
       };
     }
 
@@ -109,6 +105,7 @@ export class AdminService {
    */
   static async getAllMangas() {
     if (!this.hasDb()) {
+      const all = getAllDemoChapters('blue-lock');
       return [
         {
           id: 'demo-1',
@@ -117,7 +114,7 @@ export class AdminService {
           genres: 'Deportes, Shonen, Psicológico',
           status: 'publishing',
           coverImageUrl: '/images/blue-lock-cover.jpg',
-          chapterCount: 3,
+          chapterCount: all.length,
           updatedAt: new Date(),
         },
       ];
@@ -144,38 +141,19 @@ export class AdminService {
    */
   static async getChapters(mangaId?: string) {
     if (!this.hasDb()) {
-      return [
-        {
-          id: 'c1',
+      const all = getAllDemoChapters('blue-lock');
+      return all
+        .sort((a, b) => Number(b.chapterNumber) - Number(a.chapterNumber))
+        .map((c) => ({
+          id: c.id,
           mangaId: 'demo-1',
           mangaTitle: 'Blue Lock',
-          chapterNumber: '2',
-          title: 'Monstruo',
-          status: 'published',
-          publishedAt: new Date(),
-          pagesCount: 4,
-        },
-        {
-          id: 'c2',
-          mangaId: 'demo-1',
-          mangaTitle: 'Blue Lock',
-          chapterNumber: '1',
-          title: 'Sueño',
-          status: 'published',
-          publishedAt: new Date(),
-          pagesCount: 5,
-        },
-        {
-          id: 'c3',
-          mangaId: 'demo-1',
-          mangaTitle: 'Blue Lock',
-          chapterNumber: '3',
-          title: 'El Despertar del Ego',
-          status: 'draft',
-          publishedAt: new Date(),
-          pagesCount: 0,
-        },
-      ];
+          chapterNumber: String(c.chapterNumber),
+          title: c.title,
+          status: c.status,
+          publishedAt: c.publishedAt,
+          pagesCount: (c.pages || []).length,
+        }));
     }
 
     const db = getDb();
