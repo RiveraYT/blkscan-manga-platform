@@ -87,40 +87,5 @@ const catalogData = await MangaService.getCatalog({ limit: 6 });
       </div>
     </section>
 
-    <!-- BANNER INFORMATIVO / FEATURES DEL LECTOR -->
-    <section class="p-8 rounded-2xl bg-gradient-to-r from-bl-card via-bl-surface to-bl-card border border-bl-cardBorder relative overflow-hidden">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center md:text-left">
-        <div class="space-y-2">
-          <div class="w-10 h-10 rounded-xl bg-bl-primary/20 text-bl-primary flex items-center justify-center mx-auto md:mx-0">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          </div>
-          <h3 class="font-bold text-white text-base">4 Modos de Lectura</h3>
-          <p class="text-xs text-bl-muted">Individual, doble página, cascada vertical (Webtoon) y ajuste inteligente al monitor.</p>
-        </div>
-
-        <div class="space-y-2">
-          <div class="w-10 h-10 rounded-xl bg-bl-primary/20 text-bl-primary flex items-center justify-center mx-auto md:mx-0">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <h3 class="font-bold text-white text-base">Carga Progresiva</h3>
-          <p class="text-xs text-bl-muted">Precarga anticipada de páginas sin bloqueos para sesiones de lectura prolongadas.</p>
-        </div>
-
-        <div class="space-y-2">
-          <div class="w-10 h-10 rounded-xl bg-bl-primary/20 text-bl-primary flex items-center justify-center mx-auto md:mx-0">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h3 class="font-bold text-white text-base">Historial Guardado</h3>
-          <p class="text-xs text-bl-muted">Recuerda automáticamente la última página leída y tus preferencias de lectura.</p>
-        </div>
-      </div>
-    </section>
-
   </div>
 </PublicLayout>
