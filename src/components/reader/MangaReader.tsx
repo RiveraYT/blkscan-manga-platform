@@ -14,7 +14,6 @@ import {
   FileText,
   AlignVerticalJustifyCenter,
   MoveHorizontal,
-  CheckCircle2,
 } from 'lucide-react';
 
 export type ReadingMode = 'single' | 'double' | 'vertical' | 'fit';
@@ -67,8 +66,6 @@ export default function MangaReader({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [showControls, setShowControls] = useState<boolean>(true);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
-  const [showEndOfChapterModal, setShowEndOfChapterModal] = useState<boolean>(false);
-  const [showStartOfChapterModal, setShowStartOfChapterModal] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [failedPages, setFailedPages] = useState<Record<number, boolean>>({});
 
@@ -137,24 +134,21 @@ export default function MangaReader({
     localStorage.setItem('blk_pref_bg', bg);
   };
 
-  // Navegación secuencial de Izquierda a Derecha SIN saltos automáticos no deseados
+  // Navegación secuencial de Izquierda a Derecha
+  // No salta automáticamente en la última página ni muestra modales molestos
   const goToNext = useCallback(() => {
     if (readingMode === 'double') {
       if (currentPage + 2 <= totalPages) {
         setCurrentPage((p) => p + 2);
       } else if (currentPage + 1 <= totalPages) {
         setCurrentPage((p) => p + 1);
-      } else {
-        // En la última página: NO salta automáticamente, muestra el menú de fin de capítulo
-        setShowEndOfChapterModal(true);
       }
+      // Si ya está en la última página, se queda en ella
     } else {
       if (currentPage < totalPages) {
         setCurrentPage((p) => p + 1);
-      } else {
-        // En la última página: NO salta automáticamente, muestra el menú de fin de capítulo
-        setShowEndOfChapterModal(true);
       }
+      // Si ya está en la última página, se queda en ella
     }
   }, [currentPage, totalPages, readingMode]);
 
@@ -164,17 +158,13 @@ export default function MangaReader({
         setCurrentPage((p) => p - 2);
       } else if (currentPage - 1 >= 1) {
         setCurrentPage(1);
-      } else if (prevChapter) {
-        setShowStartOfChapterModal(true);
       }
     } else {
       if (currentPage > 1) {
         setCurrentPage((p) => p - 1);
-      } else if (prevChapter) {
-        setShowStartOfChapterModal(true);
       }
     }
-  }, [currentPage, readingMode, prevChapter]);
+  }, [currentPage, readingMode]);
 
   // Navegación con teclado: Izquierda = Anterior, Derecha = Siguiente
   useEffect(() => {
@@ -192,8 +182,6 @@ export default function MangaReader({
       } else if (e.key === 'h' || e.key === 'H') {
         setShowControls((prev) => !prev);
       } else if (e.key === 'Escape') {
-        setShowEndOfChapterModal(false);
-        setShowStartOfChapterModal(false);
         setShowSettingsModal(false);
       }
     };
@@ -377,126 +365,6 @@ export default function MangaReader({
         >
           <Eye className="w-5 h-5" />
         </button>
-      )}
-
-      {/* ========================================================
-          MODAL: FIN DE CAPÍTULO (SOLO SE ABRE CUANDO EL USUARIO
-          LLEGA AL FINAL Y PREGUNTA ANTES DE PASAR AL SIGUIENTE)
-         ======================================================== */}
-      {showEndOfChapterModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-bl-card border border-bl-cardBorder rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl text-center relative">
-            <button
-              onClick={() => setShowEndOfChapterModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white text-sm p-1 rounded-lg hover:bg-bl-surface transition-colors"
-              title="Cerrar y seguir viendo la página actual"
-            >
-              ✕
-            </button>
-
-            <div className="w-14 h-14 rounded-2xl bg-bl-primary/10 border border-bl-primary/30 flex items-center justify-center mx-auto text-bl-primary shadow-neon-sm">
-              <CheckCircle2 className="w-7 h-7" />
-            </div>
-
-            <div className="space-y-1">
-              <h3 className="text-xl font-bold text-white font-heading">
-                ¡Fin del Capítulo {chapter.chapterNumber}!
-              </h3>
-              {chapter.title && (
-                <p className="text-xs text-bl-muted">"{chapter.title}"</p>
-              )}
-              <p className="text-xs text-gray-300 mt-2">
-                Has llegado a la última página de este capítulo. ¿Qué deseas hacer ahora?
-              </p>
-            </div>
-
-            <div className="pt-2 flex flex-col gap-2.5">
-              {nextChapter ? (
-                <a
-                  href={`/leer/${manga.slug}/${nextChapter.chapterNumber}`}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-bl-primary to-cyan-400 text-black font-extrabold text-xs shadow-neon hover:opacity-95 transition-all flex items-center justify-center gap-2"
-                >
-                  <span>Pasar al Capítulo {nextChapter.chapterNumber}</span>
-                  <ChevronRight className="w-4 h-4" />
-                </a>
-              ) : (
-                <div className="p-3 rounded-xl bg-bl-dark border border-bl-cardBorder text-xs text-bl-muted">
-                  ¡Estás al día! No hay más capítulos publicados por ahora.
-                </div>
-              )}
-
-              <button
-                onClick={() => {
-                  setCurrentPage(1);
-                  setShowEndOfChapterModal(false);
-                }}
-                className="w-full py-2.5 rounded-xl bg-bl-surface hover:bg-bl-surfaceHover text-gray-300 hover:text-white text-xs font-semibold border border-bl-cardBorder transition-colors"
-              >
-                Volver a leer desde la Página 1
-              </button>
-
-              <button
-                onClick={() => setShowEndOfChapterModal(false)}
-                className="w-full py-2 rounded-xl bg-transparent hover:bg-bl-surface/50 text-bl-muted hover:text-white text-xs transition-colors"
-              >
-                Permanecer en la última página
-              </button>
-
-              <a
-                href={`/mangas/${manga.slug}`}
-                className="w-full py-2 text-center text-xs text-bl-primary hover:underline"
-              >
-                Volver a la ficha de {manga.title}
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================
-          MODAL: INICIO DE CAPÍTULO (SI DA CLIC EN ANTERIOR EN PÁG 1)
-         ======================================================== */}
-      {showStartOfChapterModal && prevChapter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-bl-card border border-bl-cardBorder rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-center relative">
-            <button
-              onClick={() => setShowStartOfChapterModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white text-sm p-1 rounded-lg hover:bg-bl-surface transition-colors"
-            >
-              ✕
-            </button>
-
-            <div className="w-12 h-12 rounded-xl bg-bl-surface border border-bl-cardBorder flex items-center justify-center mx-auto text-bl-primary">
-              <BookOpen className="w-6 h-6" />
-            </div>
-
-            <div className="space-y-1">
-              <h3 className="text-lg font-bold text-white font-heading">
-                Inicio del Capítulo {chapter.chapterNumber}
-              </h3>
-              <p className="text-xs text-gray-300">
-                Estás en la primera página de este capítulo. ¿Deseas regresar al capítulo anterior?
-              </p>
-            </div>
-
-            <div className="pt-2 flex flex-col gap-2">
-              <a
-                href={`/leer/${manga.slug}/${prevChapter.chapterNumber}`}
-                className="w-full py-2.5 rounded-xl bg-bl-primary text-black font-bold text-xs shadow-neon-sm hover:bg-cyan-300 transition-all flex items-center justify-center gap-2"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span>Ir al Capítulo Anterior ({prevChapter.chapterNumber})</span>
-              </a>
-
-              <button
-                onClick={() => setShowStartOfChapterModal(false)}
-                className="w-full py-2 rounded-xl bg-bl-surface text-gray-300 hover:text-white text-xs font-semibold"
-              >
-                Permanecer en esta página
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* ========================================================
@@ -709,7 +577,7 @@ export default function MangaReader({
               );
             })}
 
-            {/* Navegación al final de la cascada con opciones claras */}
+            {/* Navegación al final de la cascada con opciones directas */}
             <div className="py-12 flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
               {prevChapter && (
                 <a
@@ -847,25 +715,8 @@ export default function MangaReader({
         )}
       </main>
 
-      {/* AVISO DISCRETO EN LA ÚLTIMA PÁGINA */}
-      {isAtLastPage && readingMode !== 'vertical' && !showEndOfChapterModal && (
-        <div className="fixed bottom-16 inset-x-0 z-40 flex justify-center pointer-events-none px-4">
-          <div className="pointer-events-auto bg-bl-card/90 backdrop-blur-md border border-bl-cardBorder px-4 py-2 rounded-xl shadow-xl flex items-center gap-3 text-xs">
-            <span className="text-bl-muted">Has llegado al final de este capítulo.</span>
-            {nextChapter && (
-              <button
-                onClick={() => setShowEndOfChapterModal(true)}
-                className="px-3 py-1 rounded-lg bg-bl-primary text-black font-bold text-xs hover:bg-cyan-300 transition-colors shadow-neon-sm"
-              >
-                Pasar a Cap. {nextChapter.chapterNumber} →
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* ========================================================
-          BARRA DE NAVEGACIÓN INFERIOR (PAGINADOR)
+          BARRA DE NAVEGACIÓN INFERIOR (PAGINADOR DIRECTO Y LIMPIO)
          ======================================================== */}
       {readingMode !== 'vertical' && (
         <div
@@ -874,16 +725,16 @@ export default function MangaReader({
           }`}
         >
           <div className="bg-bl-dark/95 backdrop-blur-md border-t border-bl-cardBorder px-4 py-2.5 flex items-center justify-between gap-3 max-w-4xl mx-auto rounded-t-2xl shadow-2xl">
-            {/* Botón Anterior */}
+            {/* LADO IZQUIERDO: Anterior (O Cap. Anterior si está en pág 1) */}
             {currentPage <= 1 && prevChapter ? (
-              <button
-                onClick={() => setShowStartOfChapterModal(true)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-bl-card border border-bl-cardBorder text-xs font-semibold text-gray-300 hover:text-white hover:bg-bl-surface transition-all"
-                title="Ver opciones para ir al capítulo anterior"
+              <a
+                href={`/leer/${manga.slug}/${prevChapter.chapterNumber}`}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-bl-card border border-bl-cardBorder text-xs font-semibold text-gray-300 hover:text-white hover:border-bl-primary/40 transition-all"
+                title={`Ir al Capítulo Anterior (${prevChapter.chapterNumber})`}
               >
                 <ChevronLeft className="w-4 h-4 text-bl-primary" />
                 <span className="hidden sm:inline">Cap. {prevChapter.chapterNumber}</span>
-              </button>
+              </a>
             ) : (
               <button
                 onClick={goToPrev}
@@ -896,7 +747,7 @@ export default function MangaReader({
               </button>
             )}
 
-            {/* Paginador con slider y número */}
+            {/* CENTRO: Paginador con slider numérico */}
             <div className="flex items-center gap-3 flex-1 justify-center max-w-xs">
               <input
                 type="range"
@@ -913,17 +764,16 @@ export default function MangaReader({
               </span>
             </div>
 
-            {/* Botón Siguiente: si está en la última página, permite elegir pasar al siguiente capítulo sin saltar solo */}
+            {/* LADO DERECHO: Siguiente (O botón directo al Siguiente Capítulo si está en la última página) */}
             {isAtLastPage && nextChapter ? (
-              <button
-                onClick={() => setShowEndOfChapterModal(true)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-bl-primary to-cyan-400 text-xs font-extrabold text-black hover:opacity-95 shadow-neon-sm transition-all"
-                title="Fin del capítulo. Clic para ver opciones o pasar al siguiente"
+              <a
+                href={`/leer/${manga.slug}/${nextChapter.chapterNumber}`}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-bl-primary to-cyan-400 text-xs font-extrabold text-black hover:opacity-95 shadow-neon transition-all"
+                title={`Pasar directamente al Capítulo ${nextChapter.chapterNumber}`}
               >
-                <span className="hidden sm:inline">Pasar a</span>
-                <span>Cap. {nextChapter.chapterNumber}</span>
+                <span>Siguiente Capítulo ({nextChapter.chapterNumber})</span>
                 <ChevronRight className="w-4 h-4" />
-              </button>
+              </a>
             ) : (
               <button
                 onClick={goToNext}
