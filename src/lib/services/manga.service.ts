@@ -24,58 +24,8 @@ const DEMO_MANGA: Manga = {
   updatedAt: new Date(),
 };
 
-const DEMO_CHAPTERS: (Chapter & { pages?: ChapterPage[] })[] = [
-  {
-    id: 'c0000000-0000-0000-0000-000000000001',
-    mangaId: DEMO_MANGA.id,
-    chapterNumber: '1',
-    title: 'Sueño',
-    slug: 'capitulo-1',
-    description: 'Yoichi Isagi duda sobre su filosofía de juego en equipo tras perder la final prefectural. Una extraña carta cambiará su destino.',
-    status: 'published',
-    publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    pages: [
-      { id: 'p1', chapterId: 'c1', pageNumber: 1, storageKey: 'p1', imageUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1200&auto=format&fit=crop', width: 1200, height: 1800, createdAt: new Date() },
-      { id: 'p2', chapterId: 'c1', pageNumber: 2, storageKey: 'p2', imageUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=1200&auto=format&fit=crop', width: 1200, height: 1800, createdAt: new Date() },
-      { id: 'p3', chapterId: 'c1', pageNumber: 3, storageKey: 'p3', imageUrl: 'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?q=80&w=1200&auto=format&fit=crop', width: 1200, height: 1800, createdAt: new Date() },
-      { id: 'p4', chapterId: 'c1', pageNumber: 4, storageKey: 'p4', imageUrl: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1200&auto=format&fit=crop', width: 1200, height: 1800, createdAt: new Date() },
-      { id: 'p5', chapterId: 'c1', pageNumber: 5, storageKey: 'p5', imageUrl: 'https://images.unsplash.com/photo-1517466787929-bc90951d0974?q=80&w=1200&auto=format&fit=crop', width: 1200, height: 1800, createdAt: new Date() },
-    ],
-  },
-  {
-    id: 'c0000000-0000-0000-0000-000000000002',
-    mangaId: DEMO_MANGA.id,
-    chapterNumber: '2',
-    title: 'Monstruo',
-    slug: 'capitulo-2',
-    description: 'La prueba de expulsión inicia dentro de la celda de la habitación Z: el juego de la mancha con balón.',
-    status: 'published',
-    publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    pages: [
-      { id: 'p6', chapterId: 'c2', pageNumber: 1, storageKey: 'p6', imageUrl: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?q=80&w=1200&auto=format&fit=crop', width: 1200, height: 1800, createdAt: new Date() },
-      { id: 'p7', chapterId: 'c2', pageNumber: 2, storageKey: 'p7', imageUrl: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?q=80&w=1200&auto=format&fit=crop', width: 1200, height: 1800, createdAt: new Date() },
-      { id: 'p8', chapterId: 'c2', pageNumber: 3, storageKey: 'p8', imageUrl: 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?q=80&w=1200&auto=format&fit=crop', width: 1200, height: 1800, createdAt: new Date() },
-      { id: 'p9', chapterId: 'c2', pageNumber: 4, storageKey: 'p9', imageUrl: 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=1200&auto=format&fit=crop', width: 1200, height: 1800, createdAt: new Date() },
-    ],
-  },
-  {
-    id: 'c0000000-0000-0000-0000-000000000003',
-    mangaId: DEMO_MANGA.id,
-    chapterNumber: '3',
-    title: 'El Despertar del Ego',
-    slug: 'capitulo-3',
-    description: 'Capítulo en edición y revisión técnica.',
-    status: 'draft',
-    publishedAt: new Date(),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    pages: [],
-  },
-];
+// Dataset inicial: Blue Lock configurado como manga oficial sin capítulos precargados
+const DEMO_CHAPTERS: (Chapter & { pages?: ChapterPage[] })[] = [];
 
 // Lee dinámicamente cualquier capítulo subido a public/uploads/mangas/... en modo local
 function getLocalUploadedChapters(slug: string): (Chapter & { pages?: ChapterPage[] })[] {
@@ -172,14 +122,16 @@ export class MangaService {
       return {
         manga,
         totalChapters: publishedChapters.length,
-        firstChapterNumber: publishedChapters[0]?.chapterNumber || '1',
+        firstChapterNumber: publishedChapters[0]?.chapterNumber || undefined,
       };
     } catch (e) {
       console.error('Error en getFeaturedManga, usando fallback:', e);
+      const all = getAllDemoChapters(DEMO_MANGA.slug);
+      const published = all.filter((c) => c.status === 'published').sort((a, b) => Number(a.chapterNumber) - Number(b.chapterNumber));
       return {
         manga: DEMO_MANGA,
-        totalChapters: DEMO_CHAPTERS.filter((c) => c.status === 'published').length,
-        firstChapterNumber: '1',
+        totalChapters: published.length,
+        firstChapterNumber: published[0]?.chapterNumber || undefined,
       };
     }
   }
