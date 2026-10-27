@@ -1,4 +1,6 @@
-import { eq, desc, sql, count } from 'drizzle-orm';
+import { eq, desc, asc, sql, count } from 'drizzle-orm';
+import fs from 'node:fs';
+import path from 'node:path';
 import { getDb } from '../../db';
 import { mangas, chapters, chapterPages, users } from '../../db/schema';
 import type { Manga, Chapter, ChapterPage } from '../../db/schema';
@@ -148,6 +150,7 @@ export class AdminService {
           id: c.id,
           mangaId: 'demo-1',
           mangaTitle: 'Blue Lock',
+          mangaSlug: 'blue-lock',
           chapterNumber: String(c.chapterNumber),
           title: c.title,
           status: c.status,
@@ -162,6 +165,7 @@ export class AdminService {
         id: chapters.id,
         mangaId: chapters.mangaId,
         mangaTitle: mangas.title,
+        mangaSlug: mangas.slug,
         chapterNumber: chapters.chapterNumber,
         title: chapters.title,
         status: chapters.status,
@@ -214,18 +218,240 @@ export class AdminService {
   }
 
   /**
-   * Elimina un capítulo y sus imágenes asociadas.
+   * Obtiene un capítulo por ID con todas sus páginas ordenadas para edición.
    */
-  static async deleteChapter(id: string) {
-    if (!this.hasDb()) return true;
-    const db = getDb();
+  static async getChapterById(id: string) {
+    if (!this.hasDb()) {
+      const all = getAllDemoChapters('blue-lock');
+      const cleanId = id.trim();
+      const found = all.find(
+        (c) => c.id === cleanId || String(c.chapterNumber) === cleanId || c.id === `local-ch-${cleanId}`
+      );
+      if (!found) return null;
 
-    const pages = await db.query.chapterPages.findMany({ where: eq(chapterPages.chapterId, id) });
-    for (const p of pages) {
-      if (p.storageKey) await storage.delete(p.storageKey);
+      return {
+        chapter: {
+          id: found.id,
+          mangaId: 'demo-1',
+          mangaTitle: 'Blue Lock',
+          mangaSlug: 'blue-lock',
+          chapterNumber: String(found.chapterNumber),
+          title: found.title,
+          description: found.description,
+          status: found.status,
+          publishedAt: found.publishedAt,
+        },
+        pages: (found.pages || []).map((p, idx) => ({
+          id: p.id,
+          pageNumber: p.pageNumber || idx + 1,
+          imageUrl: p.imageUrl,
+          storageKey: p.storageKey,
+        })),
+      };
     }
 
-    await db.delete(chapters).where(eq(chapters.id, id));
+    try {
+      const db = getDb();
+      let chapter = await db.query.chapters.findFirst({
+        where: eq(chapters.id, id),
+      });
+
+      if (!chapter) {
+        // Intentar buscar por número de capítulo
+        chapter = await db.query.chapters.findFirst({
+          where: eq(chapters.chapterNumber, id),
+        });
+      }
+
+      if (!chapter) return null;
+
+      const manga = await db.query.mangas.findFirst({
+        where: eq(mangas.id, chapter.mangaId),
+      });
+
+      const pages = await db.query.chapterPages.findMany({
+        where: eq(chapterPages.chapterId, chapter.id),
+        orderBy: [asc(chapterPages.pageNumber)],
+      });
+
+      return {
+        chapter: {
+          id: chapter.id,
+          mangaId: chapter.mangaId,
+          mangaTitle: manga?.title || 'Manga',
+          mangaSlug: manga?.slug || 'blue-lock',
+          chapterNumber: String(chapter.chapterNumber),
+          title: chapter.title,
+          description: chapter.description,
+          status: chapter.status,
+          publishedAt: chapter.publishedAt,
+        },
+        pages: pages.map((p) => ({
+          id: p.id,
+          pageNumber: p.pageNumber,
+          imageUrl: p.imageUrl,
+          storageKey: p.storageKey,
+        })),
+      };
+    } catch (e) {
+      console.error('Error al obtener capítulo por ID:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Elimina un capítulo y sus imágenes asociadas tanto en almacenamiento como en BD.
+   */
+  static async deleteChapter(id: string, mangaSlug = 'blue-lock', chapterNumber?: string) {
+    // 1. Limpieza en sistema de archivos local si existe la carpeta
+    try {
+      const chNum = chapterNumber || id.replace('local-ch-', '').replace('c', '');
+      const localDir = path.resolve(process.cwd(), 'public/uploads/mangas', mangaSlug, `ch${chNum}`);
+      if (fs.existsSync(localDir)) {
+        fs.rmSync(localDir, { recursive: true, force: true });
+        console.log(`[Admin] Carpeta local eliminada: ${localDir}`);
+      }
+    } catch (err) {
+      console.warn('Advertencia limpiando carpeta local:', err);
+    }
+
+    if (!this.hasDb()) {
+      return true;
+    }
+
+    try {
+      const db = getDb();
+      let chapter = await db.query.chapters.findFirst({ where: eq(chapters.id, id) });
+      if (!chapter && chapterNumber) {
+        chapter = await db.query.chapters.findFirst({ where: eq(chapters.chapterNumber, chapterNumber) });
+      }
+      const targetId = chapter ? chapter.id : id;
+
+      const pages = await db.query.chapterPages.findMany({ where: eq(chapterPages.chapterId, targetId) });
+      for (const p of pages) {
+        if (p.storageKey) await storage.delete(p.storageKey).catch(() => {});
+      }
+
+      await db.delete(chapterPages).where(eq(chapterPages.chapterId, targetId));
+      await db.delete(chapters).where(eq(chapters.id, targetId));
+      return true;
+    } catch (e) {
+      console.error('Error al eliminar capítulo de la base de datos:', e);
+      throw e;
+    }
+  }
+
+  /**
+   * Actualiza los datos de un capítulo, reordena páginas, elimina páginas y agrega nuevas páginas.
+   */
+  static async updateChapter(params: {
+    chapterId: string;
+    chapterNumber: string;
+    title?: string;
+    description?: string;
+    status: 'draft' | 'published';
+    publishedAt?: Date;
+    pagesToKeep: { id: string; pageNumber: number }[];
+    pagesToDelete: string[];
+    newPages?: { buffer: Buffer; name: string; contentType: string; pageNumber: number }[];
+    mangaSlug?: string;
+  }) {
+    const {
+      chapterId,
+      chapterNumber,
+      title,
+      description,
+      status: chStatus,
+      publishedAt = new Date(),
+      pagesToKeep,
+      pagesToDelete,
+      newPages = [],
+      mangaSlug = 'blue-lock',
+    } = params;
+
+    if (!this.hasDb()) {
+      // Modo local: guardamos las nuevas páginas en public/uploads
+      const localDir = path.resolve(process.cwd(), 'public/uploads/mangas', mangaSlug, `ch${chapterNumber}`);
+      fs.mkdirSync(localDir, { recursive: true });
+
+      // Eliminar páginas locales marcadas
+      if (fs.existsSync(localDir)) {
+        const files = fs.readdirSync(localDir);
+        for (const item of pagesToDelete) {
+          for (const f of files) {
+            if (f === item || item.includes(f) || f.includes(item)) {
+              try {
+                fs.unlinkSync(path.join(localDir, f));
+                console.log(`[Admin] Archivo local eliminado: ${f}`);
+              } catch {}
+            }
+          }
+        }
+      }
+
+      // Guardar páginas nuevas
+      for (const np of newPages) {
+        const dest = path.join(localDir, `p${String(np.pageNumber).padStart(3, '0')}_${Date.now()}_${np.name}`);
+        fs.writeFileSync(dest, np.buffer);
+      }
+
+      return true;
+    }
+
+    const db = getDb();
+
+    // 1. Actualizar metadatos del capítulo
+    await db
+      .update(chapters)
+      .set({
+        chapterNumber,
+        title: title || null,
+        description: description || null,
+        status: chStatus,
+        publishedAt,
+        slug: `capitulo-${chapterNumber}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(chapters.id, chapterId));
+
+    // 2. Eliminar páginas marcadas para borrar
+    for (const pageIdOrKey of pagesToDelete) {
+      if (pageIdOrKey.includes('/') || pageIdOrKey.includes('\\')) {
+        await storage.delete(pageIdOrKey).catch(() => {});
+      }
+      const page = await db.query.chapterPages.findFirst({
+        where: eq(chapterPages.id, pageIdOrKey),
+      });
+      if (page) {
+        if (page.storageKey) {
+          await storage.delete(page.storageKey).catch(() => {});
+        }
+        await db.delete(chapterPages).where(eq(chapterPages.id, pageIdOrKey));
+      }
+    }
+
+    // 3. Reordenar páginas existentes que se conservan
+    for (const item of pagesToKeep) {
+      await db
+        .update(chapterPages)
+        .set({ pageNumber: item.pageNumber })
+        .where(eq(chapterPages.id, item.id));
+    }
+
+    // 4. Subir y registrar nuevas páginas
+    for (const np of newPages) {
+      const ext = np.name.split('.').pop() || 'webp';
+      const storageKey = `mangas/${mangaSlug}/ch${chapterNumber}/p${np.pageNumber}_${Date.now()}.${ext}`;
+      const uploadRes = await storage.upload(np.buffer, storageKey, np.contentType);
+
+      await db.insert(chapterPages).values({
+        chapterId,
+        pageNumber: np.pageNumber,
+        storageKey: uploadRes.key,
+        imageUrl: uploadRes.url,
+      });
+    }
+
     return true;
   }
 }

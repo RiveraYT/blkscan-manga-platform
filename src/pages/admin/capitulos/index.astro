@@ -108,11 +108,11 @@ const mangas = await AdminService.getAllMangas();
                     </span>
                   </td>
                   <td class="px-5 py-3.5 text-right">
-                    <div class="flex items-center justify-end gap-2">
+                    <div class="flex items-center justify-end gap-1.5">
                       <a
-                        href={`/leer/${c.mangaTitle.toLowerCase().replace(/\s+/g, '-')}/${c.chapterNumber}`}
+                        href={`/leer/${c.mangaSlug || c.mangaTitle.toLowerCase().replace(/\s+/g, '-')}/${c.chapterNumber}`}
                         target="_blank"
-                        class="p-1.5 rounded-lg bg-bl-surface hover:text-bl-primary text-gray-300"
+                        class="p-1.5 rounded-lg bg-bl-surface hover:text-cyan-300 text-gray-300 transition-colors"
                         title="Probar en el lector"
                       >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,6 +120,29 @@ const mangas = await AdminService.getAllMangas();
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                       </a>
+
+                      <a
+                        href={`/admin/capitulos/editar?id=${c.id}`}
+                        class="p-1.5 rounded-lg bg-bl-surface hover:bg-cyan-500/10 hover:text-cyan-300 text-gray-300 transition-colors"
+                        title="Editar capítulo y páginas"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </a>
+
+                      <button
+                        type="button"
+                        class="btn-delete-chapter p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+                        data-id={c.id}
+                        data-chapter-number={c.chapterNumber}
+                        data-manga-slug={c.mangaSlug || 'blue-lock'}
+                        title="Eliminar capítulo"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -130,4 +153,107 @@ const mangas = await AdminService.getAllMangas();
       </div>
     </div>
   </div>
+
+  <!-- MODAL DE CONFIRMACIÓN DE ELIMINACIÓN -->
+  <div id="delete-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-bl-card border border-bl-cardBorder rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+
+      <div>
+        <h3 class="text-base font-bold text-white font-heading">
+          ¿Eliminar Capítulo <span id="modal-chapter-num" class="text-rose-400">#</span>?
+        </h3>
+        <p class="text-xs text-bl-muted mt-1 leading-relaxed">
+          Esta acción eliminará permanentemente este capítulo y todas sus páginas asociadas del servidor. Esta acción no se puede deshacer.
+        </p>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button
+          type="button"
+          id="btn-cancel-delete"
+          class="px-4 py-2 rounded-xl text-xs font-semibold bg-bl-surface border border-bl-cardBorder text-gray-300 hover:text-white hover:bg-bl-card transition-colors cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          id="btn-confirm-delete"
+          class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition-colors flex items-center gap-2 cursor-pointer shadow-lg shadow-rose-600/20"
+        >
+          <span>Sí, eliminar capítulo</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let targetChapter: { id: string; chapterNumber: string; mangaSlug: string } | null = null;
+    const modal = document.getElementById('delete-modal');
+    const chapterNumSpan = document.getElementById('modal-chapter-num');
+    const btnCancel = document.getElementById('btn-cancel-delete');
+    const btnConfirm = document.getElementById('btn-confirm-delete');
+
+    document.querySelectorAll('.btn-delete-chapter').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id') || '';
+        const chapterNumber = btn.getAttribute('data-chapter-number') || '';
+        const mangaSlug = btn.getAttribute('data-manga-slug') || 'blue-lock';
+
+        targetChapter = { id, chapterNumber, mangaSlug };
+        if (chapterNumSpan) chapterNumSpan.textContent = `#${chapterNumber}`;
+        if (modal) {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+        }
+      });
+    });
+
+    const closeModal = () => {
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      targetChapter = null;
+    };
+
+    btnCancel?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    btnConfirm?.addEventListener('click', async () => {
+      if (!targetChapter) return;
+
+      if (btnConfirm) {
+        btnConfirm.textContent = 'Eliminando...';
+        btnConfirm.setAttribute('disabled', 'true');
+      }
+
+      try {
+        const res = await fetch('/api/admin/chapters', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(targetChapter),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || 'Error al eliminar capítulo.');
+        }
+
+        window.location.reload();
+      } catch (err: any) {
+        alert(err.message || 'Error al eliminar el capítulo.');
+        if (btnConfirm) {
+          btnConfirm.textContent = 'Sí, eliminar capítulo';
+          btnConfirm.removeAttribute('disabled');
+        }
+      }
+    });
+  </script>
 </AdminLayout>

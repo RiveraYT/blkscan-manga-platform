@@ -1,0 +1,27 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import ChapterEditor from '../../../components/admin/ChapterEditor';
+import { AdminService } from '../../../lib/services/admin.service';
+
+const chapterId = Astro.url.searchParams.get('id') || Astro.url.searchParams.get('chapterNumber') || '';
+
+if (!chapterId) {
+  return Astro.redirect('/admin/capitulos');
+}
+
+const chapterData = await AdminService.getChapterById(chapterId);
+
+if (!chapterData) {
+  return Astro.redirect('/admin/capitulos');
+}
+---
+
+<AdminLayout title={`Editar Capítulo #${chapterData.chapter.chapterNumber} | BLK SCAN`}>
+  <div class="max-w-6xl mx-auto space-y-6">
+    <ChapterEditor
+      client:load
+      chapter={chapterData.chapter}
+      initialPages={chapterData.pages}
+    />
+  </div>
+</AdminLayout>
